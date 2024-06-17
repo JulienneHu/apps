@@ -1,29 +1,28 @@
-name: Build and Push Docker image
+name: Build and Push Docker
 
 on:
   push:
     branches:
-      - main 
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out the repo
-      uses: actions/checkout@v2
+    - name: Check out code
+      uses: actions/checkout@v3
 
     - name: Log in to Docker Hub
-      uses: docker/login-action@v1
+      uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v2
-      with:
-        context: .
-        file: ./Dockerfile
-        push: true
-        tags: junhuuu/options:latest  
+      run: |
+        docker build -t junhuuu/options:latest .
+        docker push junhuuu/options:latest
 
+    - name: Set Environment Variable Example
+      run: echo "EXAMPLE_VAR=value" >> $GITHUB_ENV
