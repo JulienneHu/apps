@@ -1,4 +1,4 @@
-name: Build and Push Docker
+name: CI to Docker Hub
 
 on:
   push:
@@ -6,11 +6,11 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-push:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Check out code
+    - name: Check out the repository
       uses: actions/checkout@v3
 
     - name: Log in to Docker Hub
@@ -22,7 +22,4 @@ jobs:
     - name: Build and push Docker image
       run: |
         docker build -t junhuuu/options:latest .
-        docker push junhuuu/options:latest
-
-    - name: Set Environment Variable Example
-      run: echo "EXAMPLE_VAR=value" >> $GITHUB_ENV
+        docker push junhuuu/options: latest
