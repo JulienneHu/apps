@@ -1,0 +1,21 @@
+name: myenv
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.8
+  - pip
+  - pyqt
+  - matplotlib
+  - numpy
+  - scipy
+  - sqlalchemy
+  - pip:
+    - yfinance==0.2.36
+    - requests==2.31.0
+    - holidays==0.45
+    - pytz==2024.1
+    - plotly==5.22.0
+    - mplcursors==0.5.3
+    - quantlib==1.33
+    - pandas==2.0.3

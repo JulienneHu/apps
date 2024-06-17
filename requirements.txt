@@ -1,0 +1,15 @@
+yfinance==0.2.36
+requests==2.31.0
+holidays==0.45
+pytz==2024.1
+PyQt5==5.15.9
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.12.0
+matplotlib==3.7.5
+numpy==1.24.4
+pandas==2.0.3
+mplcursors==0.5.3
+quantlib==1.33
+scipy==1.10.1
+sqlalchemy==1.4.52
+plotly==5.22.0
