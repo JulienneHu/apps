@@ -2,29 +2,24 @@ name: CI to Docker Hub
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main  
 
 jobs:
   build-and-push:
-    runs-on: ubuntu-latest  
+    runs-on: ubuntu-latest  # Specifies the runner
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v2  
+        uses: actions/checkout@v3  # Checks out your repository under $GITHUB_WORKSPACE
 
-      - name: Login to DockerHub
-        uses: docker/login-action@v1
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push
-        id: docker_build
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: junhuuu/options:latest
-
-      
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/options:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/options:latest
