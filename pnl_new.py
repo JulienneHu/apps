@@ -382,7 +382,8 @@ class OptionPNLApp(QMainWindow):
 
         cursor = mplcursors.cursor(scatter, hover=True)
         cursor.connect("add", lambda sel: sel.annotation.set_text(data['hover_text'][sel.index]))
-
+        # add sleep to wait for the cursor to be created
+        plt.pause(0.1)
         self.canvas.draw()
 
 if __name__ == '__main__':

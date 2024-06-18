@@ -10,6 +10,10 @@ RUN apt-get update && apt-get install -y x11-apps \
 
 # Copy the environment.yml file to the container
 COPY environment.yml /tmp/environment.yml
+COPY trades.db ./trades.db
+
+# Make sure the file permissions are set correctly for SQLite to access and modify it
+RUN chmod 666 ./trades.db
 
 # Create the Conda environment using the environment.yml file
 RUN conda env create -f /tmp/environment.yml
