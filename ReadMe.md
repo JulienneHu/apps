@@ -32,13 +32,30 @@
   
 
   ```bash
-  docker build -t options .
+  docker build -t junhuuu/options .
+  docker build --no-cache -t junhuuu/options:latest .
   
-  docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 options
-   
+  docker pull  junhuuu/options:latest 
+  
+  docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
+  
+  docker run --rm -e DISPLAY=host.docker.internal:0 \
+             -e SCRIPT_NAME=blackScholes.py \
+             -v /tmp/.X11-unix:/tmp/.X11-unix \
+             -v /Users/julienne_hu/Desktop/Option_Apps/trades.db:/app/trades.db \
+             -p 4000:80 \
+             --name options_app_new \
+             junhuuu/options
+  
+  
   docker tag options junhuuu/options:latest
   
+  
   docker push  junhuuu/options:latest 
+  
+  # clean containers for updating
+  docker stop $(docker ps -a -q --filter ancestor=options)
+  docker rm $(docker ps -a -q --filter ancestor=options)
   
   ```
 

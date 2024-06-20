@@ -16,7 +16,7 @@ from realPrice.OptionPnl import main, calls_or_puts
 from realPrice.realOption import get_realtime_option_price
 
 # Database setup
-DATABASE_NAME = 'trades.db'
+DATABASE_NAME = '/app/trades.db'
 engine = create_engine(f'sqlite:///{DATABASE_NAME}')
 
 # Create tables if they don't exist
@@ -236,6 +236,10 @@ class OptionPNLApp(QMainWindow):
 
         # Fetch historical data
         option_data = main(symbol, expiration, strike, trade_date)
+
+        if option_data is None or option_data.empty:
+            print("No data found or unable to retrieve data.")
+            return
 
         # Fetch real-time data if market is open
         if self.market_open():

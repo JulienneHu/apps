@@ -1,35 +1,27 @@
-# Ignore version control directories
+# Ignore version control and project settings
 .git/
 .svn/
+.vscode/
+.idea/
 
-# Ignore all byte-compiled Python files
+# Ignore compiled Python files and Jupyter notebooks
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.ipynb
 
-# Ignore build outputs and package directories
+# Ignore build outputs and documentation
 build/
 dist/
 *.egg-info/
-
-# Ignore editor settings and configuration
-.vscode/
-.idea/
-
-# Ignore OS generated files
-.DS_Store
-
-# Ignore test and documentation directories
 tests/
 docs/
 
-# Ignore other non-essential files
+# Ignore miscellaneous non-essential files
+.DS_Store
 README.md
 LICENSE
 .env
 *.log
-
-# Ignore Jupyter Notebook files and PDF files
-*.ipynb
 *.pdf

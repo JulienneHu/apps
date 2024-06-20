@@ -35,7 +35,7 @@ def get_realtime_stock_price(stock_name):
             print(f"Error retrieving stock data: {e}")
             return None
 
-    print(f"The market is {status}, the current price of {stock_name} is {current_price:.2f}, the price change is {price_change:.2f}, the percent change is {percent_change:.2f}%")
+    print(f"The current price of {stock_name} is {current_price:.2f}, the price change is {price_change:.2f}, the percent change is {percent_change:.2f}%")
     return current_price, price_change, percent_change
 
 # Example usage

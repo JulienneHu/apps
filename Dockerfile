@@ -1,31 +1,36 @@
 # Use a specific Miniconda image that matches your needs
-FROM continuumio/miniconda3:4.10.3
+FROM continuumio/miniconda3:latest
 
+# Set the working directory in the container
 WORKDIR /app
 
-# Install OpenGL libraries needed for PyQt5
-RUN apt-get update && apt-get install -y x11-apps \
-    libgl1-mesa-glx \
-    && rm -rf /var/lib/apt/lists/*
+# Install necessary libraries for PyQt5 and other system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends x11-apps libgl1-mesa-glx && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy the environment.yml file to the container
+# Copy the Conda environment file
 COPY environment.yml /tmp/environment.yml
-COPY trades.db ./trades.db
 
-# Make sure the file permissions are set correctly for SQLite to access and modify it
-RUN chmod 666 ./trades.db
-
-# Create the Conda environment using the environment.yml file
+# Create the Conda environment
 RUN conda env create -f /tmp/environment.yml
 
-# Activate the Conda environment in subsequent commands
-SHELL ["conda", "run", "-n", "myenv", "/bin/bash", "-c"]
-
-# Copy the local directory contents into the container at /app
+# Copy the application's files into the container
 COPY . /app
 
-# Set the default command to execute, using an environment variable to specify the script
-CMD ["conda", "run", "-n", "myenv", "python", "${SCRIPT_NAME:-pnl_new.py}"]
+# Ensure entrypoint script is executable
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+# Remove the database file if it exists in the build context
+# to ensure it doesn't overwrite mounted volume at runtime
+RUN rm -f /app/trades.db
+
+# Set the environment variable to specify the default script
+ENV SCRIPT_NAME=pnl_new.py
 
 # Expose the port the app runs on
 EXPOSE 80
+
+# Set the entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]

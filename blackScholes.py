@@ -1,24 +1,62 @@
 import sys
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSlider, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton,
-                             QGridLayout, QFrame, QSizePolicy, QDateEdit)  # Added QSizePolicy here
+                             QGridLayout, QFrame, QSizePolicy, QDateEdit)
 from PyQt5.QtCore import (Qt, QThread, pyqtSignal, QDate)
 from PyQt5.QtGui import QFont
 from datetime import date, datetime
 from scipy.stats import norm
+from sqlalchemy import create_engine, text
 import numpy as np
 import pytz
 import holidays
-
+import QuantLib as ql
+import logging
+from sqlalchemy.exc import SQLAlchemyError
 
 from realPrice.realStock import get_realtime_stock_price
 from realPrice.realOption import get_realtime_option_price, calls_or_puts
 
-import QuantLib as ql
+from sqlalchemy import Column, Integer, String, Float, Date
+from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 
+Base = declarative_base()
+
+class BlackScholesModel(Base):
+    __tablename__ = 'blackscholes'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    symbol = Column(String, nullable=False)
+    date = Column(String, nullable=False)
+    strike = Column(Float, nullable=False)
+    stock_price = Column(Float)
+    call_premium = Column(Float)
+    put_premium = Column(Float)
+    call_ask = Column(Float)
+    call_bid = Column(Float)
+    put_ask = Column(Float)
+    put_bid = Column(Float)
+    call_price = Column(Float)
+    put_price = Column(Float)
+    call_delta = Column(Float)
+    put_delta = Column(Float)
+    impvC = Column(Float)
+    impvP = Column(Float)
+
+# Database setup
+DATABASE_NAME = '/app/trades.db'  
+engine = create_engine(f'sqlite:///{DATABASE_NAME}')
+Base.metadata.create_all(engine)
+
+# Create a scoped session
+session_factory = sessionmaker(bind=engine)
+Session = scoped_session(session_factory)
+
+# Logging setup
+import logging
+logging.basicConfig()
+logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 class BlackScholes:
-    
     def __init__(self):
         self.calendar = ql.NullCalendar()
         self.day_count = ql.Actual365Fixed()
@@ -156,13 +194,20 @@ class FetchOptionThread(QThread):
         self.strike = strike
     
     def market_open(self):
-        today = datetime.now()  
         eastern = pytz.timezone('US/Eastern')
-        current_time_et = datetime.now(eastern).time()
+        now = datetime.now(eastern)
         market_open = datetime.strptime("09:30", "%H:%M").time()
         market_close = datetime.strptime("16:00", "%H:%M").time()
-        return market_open <= current_time_et <= market_close and today.weekday() < 5 and today not in holidays.US() 
-    
+
+        # Check if today is a weekday and not a holiday
+        us_holidays = holidays.US()
+        if now.date() in us_holidays or now.weekday() >= 5:
+            return False
+
+        # Check if current time is within market hours
+        if market_open <= now.time() <= market_close:
+            return True
+        return False
 
     def run(self):
         prices, ask_prices, bid_prices = [None, None], [None, None], [None, None]
@@ -359,13 +404,10 @@ class OptionStrategyVisualizer(QMainWindow):
         # Add control panel to grid
         grid_layout.addWidget(control_panel, 0, 0)
 
-
         # Connect signals to update method
-        
 
         # Show the window
         self.show()
-
 
     def create_input_field(self, label, default_value, editable=True):
         container = QWidget()
@@ -393,6 +435,7 @@ class OptionStrategyVisualizer(QMainWindow):
         container.setLayout(layout)
         container.input_field = input_field
         return container
+
     def create_date_field(self, label, default_value):
         container = QWidget()
         layout = QHBoxLayout()
@@ -420,86 +463,132 @@ class OptionStrategyVisualizer(QMainWindow):
         container.setLayout(layout)
         container.input_field = date_input
         return container
-
-    def fetch_data(self):
-        # Check if symbol, strike_price, and maturity_date fields are filled
-        if self.symbol_input.input_field.text() and self.x_input.input_field.text() and self.date_input.input_field.text():
-            company = self.symbol_input.input_field.text()
-            date = self.date_input.input_field.text()
-            strike = float(self.x_input.input_field.text())
-
-            # Initiate thread to fetch stock price
-            self.fetch_stock_price(company)
-
-            # Initiate thread to fetch option premiums
-            self.update_option_premiums()
-
-            # update t and implied volatility
-            today_date = self.today_date.input_field.text()
-            # today date is in '%Y-%m-%d-%H-%M', we only need '%Y-%m-%d'
-            today_date = today_date[:10]
-            maturity_date = self.date_input.input_field.text()
-            T = (QDate.fromString(today_date, "yyyy-MM-dd").daysTo(QDate.fromString(maturity_date, "yyyy-MM-dd")))
-            self.time_input.input_field.setText(str(T))
-
-            # Update only if data is not 'NA'
-            call_premium_text = self.call_premium_input.input_field.text()
-            put_premium_text = self.put_premium_input.input_field.text()
-            if call_premium_text != 'NA' and put_premium_text != 'NA':
-                r = float(self.interest_input.input_field.text())
-                sigma = float(self.volatility_input.input_field.text())
-                T = T / 365
-                stock_price_text = self.stock_price_input.input_field.text()
-                if stock_price_text != 'NA':
-                    stock = float(stock_price_text)
-                    impvC = BlackScholes().blsimpv('c', stock, strike, T, r, float(call_premium_text), sigma)
-                    impvP = BlackScholes().blsimpv('p', stock, strike, T, r, float(put_premium_text), sigma)
-
-                    # Update input fields with two decimal places
-                    self.impvC_input.input_field.setText("{:.2f}".format(impvC) if impvC is not None else "NA")
-                    self.impvP_input.input_field.setText("{:.2f}".format(impvP) if impvP is not None else "NA")
-
-                    # Update call and put price
-                    call_price = BlackScholes().blsprice('c', stock, strike, T, r, sigma)
-                    put_price = BlackScholes().blsprice('p', stock, strike, T, r, sigma)
-                    # buy option when prices larger than ask, sell option when prices smaller than bid, otherwise hold
-                    # set call price green when larger than ask, red when smaller than bid, otherwise black, same with put price
-                    call_ask = float(self.call_ask_input.input_field.text())
-                    call_bid = float(self.call_bid_input.input_field.text())
-                    put_ask = float(self.put_ask_input.input_field.text())
-                    put_bid = float(self.put_bid_input.input_field.text())
-                    
-                    if call_price > call_ask:
-                        self.call_price_input.input_field.setStyleSheet("color: #007560;")
-                    elif call_price < call_bid:
-                        self.call_price_input.input_field.setStyleSheet("color: #bd1414;")
-                    else:
-                        self.call_price_input.input_field.setStyleSheet("color: black;")
-                    if put_price > put_ask:
-                        self.put_price_input.input_field.setStyleSheet("color: #007560;")
-                    elif put_price < put_bid:
-                        self.put_price_input.input_field.setStyleSheet("color: #bd1414;")
-                    else:
-                        self.put_price_input.input_field.setStyleSheet("color: black;")
-                        
-                    self.call_price_input.input_field.setText("{:.2f}".format(call_price))
-                    self.put_price_input.input_field.setText("{:.2f}".format(put_price))
-
-                    # Update call and put delta
-                    call_delta = BlackScholes().blsdelta('c', stock, strike, T, r, sigma)
-                    put_delta = BlackScholes().blsdelta('p', stock, strike, T, r, sigma)
-                    self.call_delta_input.input_field.setText("{:.2f}".format(call_delta))
-                    self.put_delta_input.input_field.setText("{:.2f}".format(put_delta))
-            else:
-                # Set all outputs to 'NA' if premiums are not available
-                self.impvC_input.input_field.setText("NA")
-                self.impvP_input.input_field.setText("NA")
-                self.call_price_input.input_field.setText("NA")
-                self.put_price_input.input_field.setText("NA")
-                self.call_delta_input.input_field.setText("NA")
-                self.put_delta_input.input_field.setText("NA")
-
     
+    def insert_data(self, company, date, strike, stock_price, call_premium, put_premium, call_ask, call_bid, put_ask, put_bid, call_price, put_price, call_delta, put_delta, impvC, impvP):
+        session = Session()
+        try:
+            new_entry = BlackScholesModel(
+                symbol=company,
+                date=date,
+                strike=strike,
+                stock_price=stock_price,
+                call_premium=call_premium,
+                put_premium=put_premium,
+                call_ask=call_ask,
+                call_bid=call_bid,
+                put_ask=put_ask,
+                put_bid=put_bid,
+                call_price=call_price,
+                put_price=put_price,
+                call_delta=call_delta,
+                put_delta=put_delta,
+                impvC=impvC,
+                impvP=impvP
+            )
+            session.add(new_entry)
+            session.commit()
+            logging.info(f"Inserted data for {company} on {date}")
+        except SQLAlchemyError as e:
+            session.rollback()
+            logging.error(f"Error occurred: {e}")
+        finally:
+            session.close()
+   
+    def fetch_data(self):
+        company = self.symbol_input.input_field.text()
+        date = self.date_input.input_field.text()
+        strike = float(self.x_input.input_field.text())
+
+        self.fetch_stock_price(company)
+
+        # Fetch the stock price and update the UI accordingly
+        self.fetch_stock_price(company)
+
+        # Use current stock price for further calculations
+        stock_price = self.stock_price_input.input_field.text()
+        if stock_price != 'NA':
+            stock_price = float(stock_price)
+
+        self.update_option_premiums()
+        
+        # Update T and implied volatility
+        today_date = self.today_date.input_field.text()
+        today_date = today_date[:10]  # Extract only the date part
+        maturity_date = self.date_input.input_field.text()
+        T = QDate.fromString(today_date, "yyyy-MM-dd").daysTo(QDate.fromString(maturity_date, "yyyy-MM-dd"))
+        self.time_input.input_field.setText(str(T))
+        
+        # Initialize the variables to None
+        call_premium = None
+        put_premium = None
+        call_ask = None
+        call_bid = None
+        put_ask = None
+        put_bid = None
+        call_price = None
+        put_price = None
+        call_delta = None
+        put_delta = None
+        impvC = None
+        impvP = None
+        
+        if stock_price and self.call_premium_input.input_field.text() != 'NA' and self.put_premium_input.input_field.text() != 'NA':
+            r = float(self.interest_input.input_field.text())
+            sigma = float(self.volatility_input.input_field.text())
+            T = T / 365.0
+            call_premium = float(self.call_premium_input.input_field.text())
+            put_premium = float(self.put_premium_input.input_field.text())
+            
+            impvC = BlackScholes().blsimpv('c', stock_price, strike, T, r, call_premium, sigma)
+            impvP = BlackScholes().blsimpv('p', stock_price, strike, T, r, put_premium, sigma)
+
+            self.impvC_input.input_field.setText("{:.2f}".format(impvC) if impvC is not None else "NA")
+            self.impvP_input.input_field.setText("{:.2f}".format(impvP) if impvP is not None else "NA")
+
+            call_price = BlackScholes().blsprice('c', stock_price, strike, T, r, sigma)
+            put_price = BlackScholes().blsprice('p', stock_price, strike, T, r, sigma)
+            
+            call_ask = float(self.call_ask_input.input_field.text())
+            call_bid = float(self.call_bid_input.input_field.text())
+            put_ask = float(self.put_ask_input.input_field.text())
+            put_bid = float(self.put_bid_input.input_field.text())
+
+            if call_price > call_ask:
+                self.call_price_input.input_field.setStyleSheet("color: #007560;")
+            elif call_price < call_bid:
+                self.call_price_input.input_field.setStyleSheet("color: #bd1414;")
+            else:
+                self.call_price_input.input_field.setStyleSheet("color: black;")
+
+            if put_price > put_ask:
+                self.put_price_input.input_field.setStyleSheet("color: #007560;")
+            elif put_price < put_bid:
+                self.put_price_input.input_field.setStyleSheet("color: #bd1414;")
+            else:
+                self.put_price_input.input_field.setStyleSheet("color: black;")
+                
+            self.call_price_input.input_field.setText("{:.2f}".format(call_price))
+            self.put_price_input.input_field.setText("{:.2f}".format(put_price))
+
+            call_delta = BlackScholes().blsdelta('c', stock_price, strike, T, r, sigma)
+            put_delta = BlackScholes().blsdelta('p', stock_price, strike, T, r, sigma)
+            self.call_delta_input.input_field.setText("{:.2f}".format(call_delta))
+            self.put_delta_input.input_field.setText("{:.2f}".format(put_delta))
+
+        
+        else:
+            self.impvC_input.input_field.setText("NA")
+            self.impvP_input.input_field.setText("NA")
+            self.call_price_input.input_field.setText("NA")
+            self.put_price_input.input_field.setText("NA")
+            self.call_delta_input.input_field.setText("NA")
+            self.put_delta_input.input_field.setText("NA")
+
+        if all(value is not None for value in [company, date, strike, stock_price, call_premium, put_premium, call_ask, call_bid, put_ask, put_bid, call_price, put_price, call_delta, put_delta, impvC, impvP]):
+            self.insert_data(company, date, strike, stock_price, call_premium, put_premium, call_ask, call_bid, put_ask, put_bid, call_price, put_price, call_delta, put_delta, impvC, impvP)
+     
+
+        
     def fetch_stock_price(self, company):
         """Initiates fetching of the stock price for the given company symbol."""
         # Ensure any existing thread is terminated before starting a new one

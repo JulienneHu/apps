@@ -5,43 +5,22 @@ import holidays
 import pytz
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QGridLayout, QFrame, QWidget, QHBoxLayout, QSizePolicy
 from PyQt5.QtCore import Qt
-from PyQt5.QtWebEngineWidgets import QWebEngineView
+import matplotlib.pyplot as plt
+import mplcursors
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 from datetime import datetime
-import plotly.graph_objects as go
-import plotly.io as pio
-from sqlalchemy import create_engine, text
 
-
-from realPrice.OptionPnl import main, calls_or_puts  
+from realPrice.OptionPnl import main, calls_or_puts
 from realPrice.realOption import get_realtime_option_price
 
-# Database setup
-DATABASE_NAME = 'trades.db'
-engine = create_engine(f'sqlite:///{DATABASE_NAME}')
-
-# Create tables if they don't exist
-with engine.connect() as conn:
-    conn.execute(text("""
-    CREATE TABLE IF NOT EXISTS trades (
-        trade_date TEXT,
-        symbol TEXT,
-        strike REAL,
-        expiration TEXT,
-        stock_trade_price REAL,
-        effective_delta REAL,
-        call_trade_price REAL,
-        call_action_type TEXT,
-        num_call_contracts INTEGER,
-        put_trade_price REAL,
-        put_action_type TEXT,
-        num_put_contracts INTEGER,
-        stock_close_price REAL,
-        call_close_price REAL,
-        put_close_price REAL,
-        daily_pnl REAL,
-        PRIMARY KEY (trade_date, symbol, strike, expiration, call_action_type, put_action_type, num_call_contracts, num_put_contracts)
-    )
-    """))
+# Dummy DataFrame to hold trade data
+trades_df = pd.DataFrame(columns=[
+    'trade_date', 'symbol', 'strike', 'expiration', 'stock_trade_price', 'effective_delta',
+    'call_trade_price', 'call_action_type', 'num_call_contracts', 'put_trade_price',
+    'put_action_type', 'num_put_contracts', 'stock_close_price', 'call_close_price',
+    'put_close_price', 'daily_pnl', 'change'
+])
 
 stylesheet = """
 QWidget {
@@ -102,10 +81,11 @@ class OptionPNLApp(QMainWindow):
         super().__init__()
         self.initUI()
         self.setStyleSheet(stylesheet)
+        self.trades = trades_df.copy()
     
     def initUI(self):
         self.setWindowTitle("Option PNL Tracker")
-        self.setGeometry(100, 100, 1200, 800)
+        self.setGeometry(100, 100, 1400, 800)
         
         central_widget = QWidget(self)
         self.setCentralWidget(central_widget)
@@ -140,25 +120,31 @@ class OptionPNLApp(QMainWindow):
         grid_layout.addWidget(control_panel, 0, 0)
 
         # Right-side plot
-        self.web_view = QWebEngineView()
-        grid_layout.addWidget(self.web_view, 0, 1)
+        self.figure = plt.Figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.canvas.setMinimumSize(800, 600)
+        grid_layout.addWidget(self.canvas, 0, 1)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
+        
+        self.toolbar = NavigationToolbar(self.canvas, self)
+        grid_layout.addWidget(self.toolbar, 1, 1)
 
         self.show()
 
     def create_input_field(self, label, default_value, layout, editable=True):
         container = QWidget()
         field_layout = QHBoxLayout()
-        field_layout.setContentsMargins(0, 0, 0, 0)  # Keep margins minimal
+        field_layout.setContentsMargins(0, 0, 0, 0)
         field_layout.setSpacing(10)
         
         lbl = QLabel(label)
-        lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)  # Adjust this line
+        lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
         
         input_field = QLineEdit(default_value)
         input_field.setAlignment(Qt.AlignCenter)
-        input_field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Ensure input field can expand
+        input_field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         input_field.setReadOnly(not editable)
-            
+        
         if editable:
             input_field.returnPressed.connect(self.update_plot)
         
@@ -172,18 +158,18 @@ class OptionPNLApp(QMainWindow):
     def create_combo_box(self, label, options, layout):
         container = QWidget()
         field_layout = QHBoxLayout()
-        field_layout.setContentsMargins(0, 0, 0, 0)  # Keep margins minimal
+        field_layout.setContentsMargins(0, 0, 0, 0)
         field_layout.setSpacing(10)
         
         lbl = QLabel(label)
-        lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)  # Adjust this line
+        lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
         
         combo_box = QComboBox()
         combo_box.addItems(options)
-        combo_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Ensure combo box can expand
-        combo_box.setEditable(True)  # Set the combo box as editable to change text alignment
-        combo_box.lineEdit().setAlignment(Qt.AlignCenter)  # Center align the text
-        combo_box.lineEdit().setReadOnly(True)  # Set read-only again to behave like a normal combo box
+        combo_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        combo_box.setEditable(True)
+        combo_box.lineEdit().setAlignment(Qt.AlignCenter)
+        combo_box.lineEdit().setReadOnly(True)
 
         field_layout.addWidget(lbl)
         field_layout.addWidget(combo_box)
@@ -192,20 +178,14 @@ class OptionPNLApp(QMainWindow):
         container.combo_box = combo_box
         return container
 
-
-
     def calculate_pnl(self, call_action, put_action, NC, C_0, C_t, NP, P_0, P_t, effectice_delta, trade_price, current_price):
         if call_action == "sell" and put_action == "sell":
-            # Sell Call & Sell Put
-            return (NC * (C_0 - C_t) + NP * (P_0 - P_t) + effectice_delta * (current_price - trade_price) ) * 100
+            return (NC * (C_0 - C_t) + NP * (P_0 - P_t) + effectice_delta * (current_price - trade_price)) * 100
         elif call_action == "sell" and put_action == "buy":
-            # Sell Call & Buy Put
             return (NC * (C_0 - C_t) + NP * (P_t - P_0) + effectice_delta * (current_price - trade_price)) * 100
         elif call_action == "buy" and put_action == "sell":
-            # Buy Call & Sell Put
             return (NC * (C_t - C_0) + NP * (P_0 - P_t) + effectice_delta * (current_price - trade_price)) * 100
         elif call_action == "buy" and put_action == "buy":
-            # Buy Call & Buy Put
             return (NC * (C_t - C_0) + NP * (P_t - P_0) + effectice_delta * (current_price - trade_price)) * 100
         else:
             return 0  
@@ -219,7 +199,7 @@ class OptionPNLApp(QMainWindow):
         return market_open <= current_time_et <= market_close and today.weekday() < 5 and today not in holidays.US() 
     
     def add_trade(self):
-    
+        # Get input values
         trade_date = self.trade_date_input.input_field.text()
         symbol = self.symbol_input.input_field.text()
         strike = float(self.strike_input.input_field.text())
@@ -232,40 +212,34 @@ class OptionPNLApp(QMainWindow):
         num_put_contracts = int(self.num_put_contracts_input.input_field.text())
         call_action_type = self.call_action_type_input.combo_box.currentText()
         put_action_type = self.put_action_type_input.combo_box.currentText()
-        stock_trade_price = float(self.stock_trade_price_input.input_field.text())
 
-
-        # Get historical data from main function
+        # Fetch historical data
         option_data = main(symbol, expiration, strike, trade_date)
 
+        if option_data is None or option_data.empty:
+            print("No data found or unable to retrieve data.")
+            return
+
+        # Fetch real-time data if market is open
         if self.market_open():
             options = calls_or_puts(symbol, expiration, strike)
-            # get the ask and bid price for the options
             if options and len(options) == 2:
-                call_last_price, call_ask_price, call_bid_price = get_realtime_option_price(options[0])
-                put_last_price, put_ask_price, put_bid_price = get_realtime_option_price(options[1])
-                # update today's call and put based on trade type in option_data dataframe
-                if call_action_type == "buy":
-                    option_data['call_close_price'][-1] = call_ask_price if call_ask_price else call_last_price
-                else:
-                    option_data['call_close_price'][-1] = call_bid_price if call_bid_price else call_last_price
-                if put_action_type == "buy":
-                    option_data['put_close_price'][-1] = put_ask_price if put_ask_price else put_last_price
-                else:
-                    option_data['put_close_price'][-1] = put_bid_price if put_bid_price else put_last_price
-        
+                call_close_price, call_ask_price, call_bid_price = get_realtime_option_price(options[0])
+                put_close_price, put_ask_price, put_bid_price = get_realtime_option_price(options[1])
+                option_data.at[option_data.index[-1], 'call_close_price'] = call_ask_price if call_action_type == "sell" else call_bid_price
+                option_data.at[option_data.index[-1], 'put_close_price'] = put_ask_price if put_action_type == "sell" else put_bid_price
 
+        # Proceed with updating trades and calculating PNL
         if option_data is not None and not option_data.empty:
             for _, row in option_data.iterrows():
-                # Calculate daily PNL using the helper function
                 daily_pnl = self.calculate_pnl(call_action_type, put_action_type,
-                                            num_call_contracts, call_trade_price, row['call_close_price'],
-                                            num_put_contracts, put_trade_price, row['put_close_price'],
-                                            effective_delta, stock_trade_price, row['stock_close_price'])
-                
-                
+                                               num_call_contracts, call_trade_price, row['call_close_price'],
+                                               num_put_contracts, put_trade_price, row['put_close_price'],
+                                               effective_delta, stock_trade_price, row['stock_close_price'])
                 daily_pnl = round(daily_pnl, 2)
-                params = {
+                investment = ((num_call_contracts * call_trade_price) + (num_put_contracts * put_trade_price)) * 100
+                change = round(daily_pnl / investment * 100, 2)
+                new_trade = {
                     'trade_date': row['date'].strftime('%Y-%m-%d'),
                     'symbol': symbol,
                     'strike': strike,
@@ -281,31 +255,17 @@ class OptionPNLApp(QMainWindow):
                     'stock_close_price': round(row['stock_close_price'], 2),
                     'call_close_price': row['call_close_price'],
                     'put_close_price': row['put_close_price'],
-                    'daily_pnl': daily_pnl
+                    'daily_pnl': daily_pnl,
+                    'change': change
                 }
 
-                try:
-                    with engine.connect() as conn:
-                        conn.execute(text("""
-                            INSERT INTO trades (
-                                trade_date, symbol, strike, expiration, stock_trade_price, effective_delta,
-                                call_trade_price, call_action_type, num_call_contracts, put_trade_price,
-                                put_action_type, num_put_contracts, stock_close_price, call_close_price,
-                                put_close_price, daily_pnl
-                            ) VALUES (
-                                :trade_date, :symbol, :strike, :expiration, :stock_trade_price, :effective_delta,
-                                :call_trade_price, :call_action_type, :num_call_contracts, :put_trade_price,
-                                :put_action_type, :num_put_contracts, :stock_close_price, :call_close_price,
-                                :put_close_price, :daily_pnl
-                            )
-                        """), params)
-                except Exception as e:
-                    print(f"Failed to insert data for {row['date']}: {e}")           
-                
-            self.update_plot()  
+                # Add the new trade to the DataFrame
+                new_df = pd.DataFrame([new_trade])
+                self.trades = pd.concat([self.trades, new_df], ignore_index=True)
+
+            self.update_plot()
         else:
             print("No data found or unable to retrieve data.")
-
 
     def update_plot(self):
         input_date = self.trade_date_input.input_field.text()
@@ -316,103 +276,66 @@ class OptionPNLApp(QMainWindow):
         put_action_type = self.put_action_type_input.combo_box.currentText()
         num_call_contracts = int(self.num_call_contracts_input.input_field.text())
         num_put_contracts = int(self.num_put_contracts_input.input_field.text())
+        trade_price = float(self.stock_trade_price_input.input_field.text())
+        effective_delta = float(self.effective_delta_input.input_field.text())
 
-        with engine.connect() as conn:
-            result = conn.execute(text("""
-                SELECT 
-                    trade_date, AVG(daily_pnl) as daily_pnl, AVG(call_close_price) as call_close_price, 
-                    AVG(put_close_price) as put_close_price, AVG(stock_close_price) as stock_close_price 
-                FROM 
-                    trades
-                WHERE
-                    trade_date >= :start_date AND
-                    symbol = :symbol AND
-                    strike = :strike AND
-                    expiration = :expiration AND
-                    call_action_type = :call_action_type AND
-                    put_action_type = :put_action_type AND
-                    num_call_contracts = :num_call_contracts AND
-                    num_put_contracts = :num_put_contracts
-                GROUP BY trade_date
-                ORDER BY trade_date ASC
-            """), {
-                'start_date': input_date,
-                'symbol': symbol,
-                'strike': strike,
-                'expiration': expiration,
-                'call_action_type': call_action_type,
-                'put_action_type': put_action_type,
-                'num_call_contracts': num_call_contracts,
-                'num_put_contracts': num_put_contracts
-            })
-            data = pd.DataFrame(result.fetchall(), columns=result.keys())
+        filtered_data = self.trades[
+            (self.trades['symbol'] == symbol) &
+            (self.trades['strike'] == strike) &
+            (self.trades['expiration'] == expiration) &
+            (self.trades['trade_date'] >= input_date) &
+            (self.trades['call_action_type'] == call_action_type) &
+            (self.trades['put_action_type'] == put_action_type) &
+            (self.trades['num_call_contracts'] == num_call_contracts) &
+            (self.trades['num_put_contracts'] == num_put_contracts) &
+            (self.trades['stock_trade_price'] == trade_price) &
+            (self.trades['effective_delta'] == effective_delta)
+        ]
 
-        # Convert 'trade_date' to datetime
-        data['trade_date'] = pd.to_datetime(data['trade_date'])
-        
-        # Create a new index for plotting
-        data['plot_index'] = range(len(data))
-        
-        # Map plot_index to trade_date for x-axis labels
-        date_labels = {row['plot_index']: row['trade_date'].strftime('%Y-%m-%d') for index, row in data.iterrows()}
-        
-        # Define colors based on conditions
-        colors = ['#bd1414' if x < 0 else '#007560' for x in data['daily_pnl']]
+        if not filtered_data.empty:
+            filtered_data = filtered_data.sort_values(by='trade_date')
+            filtered_data['trade_date'] = pd.to_datetime(filtered_data['trade_date'])
+            filtered_data['plot_index'] = range(len(filtered_data))
+            date_labels = {row['plot_index']: row['trade_date'].strftime('%m-%d') for index, row in filtered_data.iterrows()}
+            colors = ['#bd1414' if x < 0 else '#007560' for x in filtered_data['daily_pnl']]
+            hover_texts = []
+            for idx, row in filtered_data.iterrows():
+                hover_text = f"Date: {row['trade_date'].strftime('%Y-%m-%d')}\n" \
+                            f"Stock: ${row['stock_close_price']:.2f}\n" \
+                            f"Call: ${row['call_close_price']:.2f}\n" \
+                            f"Put: ${row['put_close_price']:.2f}\n" \
+                            f"Daily PNL: ${row['daily_pnl']:.2f}\n" \
+                            f"Change: {row['change']:.2f}%"
+                hover_texts.append(hover_text)
+            filtered_data['hover_text'] = hover_texts
 
-        # Create hover text for each point
-        data['hover_text'] = data.apply(lambda row: f"Date: {row['trade_date'].strftime('%Y-%m-%d')}<br>"
-                                                        f"Stock: ${row['stock_close_price']:.2f}<br>"
-                                                        f"Call: ${row['call_close_price']:.2f}<br>"
-                                                        f"Put: ${row['put_close_price']:.2f}<br>"
-                                                        f"Daily PNL: ${row['daily_pnl']:.2f}", axis=1)
-
-        # Create a Plotly figure using the plot_index
-        fig = go.Figure(data=[
-            go.Scatter(x=data['plot_index'], y=data['daily_pnl'], mode='lines+markers',
-                    marker=dict(size=12, color=colors), 
-                    line=dict(color='black'),
-                    hoverinfo='text', 
-                    text=data['hover_text'],
-                    hoverlabel=dict(bgcolor=colors))
-        ])
-
-        subtitle=f'{call_action_type.capitalize()} {num_call_contracts} Call(s) & {put_action_type.capitalize()} {num_put_contracts} Put(s)'
+            self.figure.clear()
+            ax = self.figure.add_subplot(111)
             
-        # Update layout with a horizontal line at y=0 and set the background color
-        fig.update_layout(
-            title={
-            'text': f"Profit & Loss<br><sub>{subtitle}</sub>",
-            'y': 0.95,
-            'x': 0.5,
-            'xanchor': 'center',
-            'yanchor': 'top'
-            },
-            xaxis=dict(title='Date', tickmode='array', tickvals=list(date_labels.keys()), ticktext=list(date_labels.values())),
-            yaxis_title='Π',
-            plot_bgcolor='#EEEEEE',
-            hovermode='closest',
-            shapes=[
-                dict(
-                    type='line',
-                    xref='paper',
-                    x0=0,
-                    x1=1,
-                    yref='y',
-                    y0=0,
-                    y1=0,
-                    line=dict(
-                        color='black',
-                        width=2,
-                        dash='dot')
-                )
-            ]
-        )
+            scatter = ax.scatter(filtered_data['plot_index'], filtered_data['daily_pnl'], c=colors, s=100)
+            ax.plot(filtered_data['plot_index'], filtered_data['daily_pnl'], color='black', linewidth=2)
 
-        html = '<html><body>'
-        html += pio.to_html(fig, full_html=False, include_plotlyjs='cdn')
-        html += '</body></html>'
+            subtitle = f'{call_action_type.capitalize()} {num_call_contracts} Call(s) & {put_action_type.capitalize()} {num_put_contracts} Put(s)'
 
-        self.web_view.setHtml(html)
+            ax.set_title(f"Profit & Loss\n{subtitle}", fontsize=14)
+            ax.set_xlabel('Date', fontdict={'fontsize': 14})
+            ax.set_ylabel('Π', fontdict={'fontsize': 14})
+            ax.axhline(y=0, color='black', linestyle='--', linewidth=2)
+            ax.grid(True)
+
+            ax.set_xticks(list(date_labels.keys()))
+            ax.set_xticklabels(list(date_labels.values()), rotation=45, ha='right')
+            
+            ax.tick_params(axis='x', labelsize=10)
+            ax.tick_params(axis='y', labelsize=10)
+
+            cursor = mplcursors.cursor(scatter, hover=True)
+            cursor.connect("add", lambda sel: sel.annotation.set_text(filtered_data['hover_text'].iloc[sel.index]))
+            
+            self.canvas.draw()
+        else:
+            print("No data to display for selected filters.")
+
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
