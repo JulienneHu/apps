@@ -95,11 +95,11 @@ class OptionPNLApp(QMainWindow):
         control_panel = QFrame(central_widget)
         control_layout = QVBoxLayout(control_panel)
 
-        self.trade_date_input = self.create_input_field("Trade Date", '2024-05-08', control_layout)
-        self.symbol_input = self.create_input_field("Symbol", 'MSFT', control_layout)
-        self.strike_input = self.create_input_field("Strike Price", '415', control_layout)
-        self.expiration_input = self.create_input_field("Expiration Date", '2024-06-21', control_layout)
-        self.stock_trade_price_input = self.create_input_field("Stock Trade Price", '412.00', control_layout)
+        self.trade_date_input = self.create_input_field("Trade Date", '2024-06-01', control_layout)
+        self.symbol_input = self.create_input_field("Symbol", 'MU', control_layout)
+        self.strike_input = self.create_input_field("Strike Price", '145', control_layout)
+        self.expiration_input = self.create_input_field("Expiration Date", '2024-07-19', control_layout)
+        self.stock_trade_price_input = self.create_input_field("Stock Trade Price", '145.059, control_layout)
         self.effective_delta_input = self.create_input_field("Effective Delta", '0', control_layout)
         
         self.call_action_type_input = self.create_combo_box("Call Action Type", ["buy", "sell"], control_layout)
