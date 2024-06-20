@@ -99,7 +99,7 @@ class OptionPNLApp(QMainWindow):
         self.symbol_input = self.create_input_field("Symbol", 'MU', control_layout)
         self.strike_input = self.create_input_field("Strike Price", '145', control_layout)
         self.expiration_input = self.create_input_field("Expiration Date", '2024-07-19', control_layout)
-        self.stock_trade_price_input = self.create_input_field("Stock Trade Price", '145.059, control_layout)
+        self.stock_trade_price_input = self.create_input_field("Stock Trade Price", '145.59', control_layout)
         self.effective_delta_input = self.create_input_field("Effective Delta", '0', control_layout)
         
         self.call_action_type_input = self.create_combo_box("Call Action Type", ["buy", "sell"], control_layout)
