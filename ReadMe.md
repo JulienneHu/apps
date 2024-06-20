@@ -1,4 +1,4 @@
-# Part 1For Users to Run the Code(only steps)
+# Part1 For Users to Run the Code(only steps)
 
 - First Open docker, and in terminal
 
