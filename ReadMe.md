@@ -1,6 +1,6 @@
 # Part1 For Users to Run the Code(only steps)
 
-- First Open docker, and in terminal
+- First Open docker(desktop app version), and in terminal
 
   ```bash
   docker login
