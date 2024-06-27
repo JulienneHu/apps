@@ -49,7 +49,7 @@ class OptionPNLApp(QMainWindow):
         self.trade_date_input = create_input_field("Trade Date", '2024-05-08', control_layout)
         self.symbol_input = create_input_field("Symbol", 'MSFT', control_layout)
         self.strike_input = create_input_field("Strike Price", '415', control_layout)
-        self.expiration_input = create_input_field("Expiration Date", '2024-06-21', control_layout)
+        self.expiration_input = create_input_field("Expiration Date", '2024-07-19', control_layout)
         self.stock_trade_price_input = create_input_field("Stock Trade Price", '412.00', control_layout)
         self.effective_delta_input = create_input_field("Effective Delta", '0', control_layout)
         
@@ -183,19 +183,17 @@ class OptionPNLApp(QMainWindow):
                     (self.trades['num_call_contracts'] == new_trade['num_call_contracts']) &
                     (self.trades['put_trade_price'] == new_trade['put_trade_price']) &
                     (self.trades['put_action_type'] == new_trade['put_action_type']) &
-                    (self.trades['num_put_contracts'] == new_trade['num_put_contracts']) &
-                    (self.trades['stock_close_price'] == new_trade['stock_close_price']) &
-                    (self.trades['call_close_price'] == new_trade['call_close_price']) &
-                    (self.trades['put_close_price'] == new_trade['put_close_price']) &
-                    (self.trades['daily_pnl'] == new_trade['daily_pnl']) &
-                    (self.trades['change'] == new_trade['change'])
+                    (self.trades['num_put_contracts'] == new_trade['num_put_contracts']) 
+                    # (self.trades['stock_close_price'] == new_trade['stock_close_price']) &
+                    # (self.trades['call_close_price'] == new_trade['call_close_price']) &
+                    # (self.trades['put_close_price'] == new_trade['put_close_price']) &
+                    # (self.trades['daily_pnl'] == new_trade['daily_pnl']) &
+                    # (self.trades['change'] == new_trade['change'])
                 ]
                 
-                # if today's trade have multiple trades, we only keep the last one
-                if not exists.empty:
+                
+                if not exists.empty:     
                     self.trades = self.trades.drop(exists.index)
-
-                if not exists.empty:
                     print("Trade already exists. Skipping duplicate entry.")
                     continue
 
