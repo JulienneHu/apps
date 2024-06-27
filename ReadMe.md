@@ -26,7 +26,7 @@
   ```
 
   docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
-=======
+
   # change file name in the SCRIPT_NAME to run different files(Pay Attention To Lowercase And Uppercase)
   docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
   ```
