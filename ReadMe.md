@@ -1,7 +1,7 @@
-# Part 1For Users to Run the Code(only steps)
+# Part1 For Users to Run the Code(only steps)
 
 - First Open docker, and in terminal
-=======
+
 # Part1 For Users to Run the Code(only steps)
 
 - First Open docker(desktop app version), and in terminal
