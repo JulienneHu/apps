@@ -6,8 +6,6 @@
 # Part1 For Users to Run the Code(only steps)
 
 - First Open docker(desktop app version), and in terminal
->>>>>>> 3b21a2c6f39fa4777aaa4a46004c9024272fffab
-
   ```bash
   docker login
   ```
@@ -22,7 +20,8 @@
   # This works once you firstly open docker or you have some changes in github
   docker pull  junhuuu/options:latest 
   
-<<<<<<< HEAD
+
+
   # change file name in the SCRIPT_NAME to run different files
   docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
   ```
@@ -33,8 +32,7 @@
   docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
   ```
 
-  
->>>>>>> 3b21a2c6f39fa4777aaa4a46004c9024272fffab
+
 
   
 
@@ -76,7 +74,7 @@ docker build --no-cache -t junhuuu/options:latest .
 
 docker pull  junhuuu/options:latest 
 
-<<<<<<< HEAD
+
 docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
 =======
 docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
