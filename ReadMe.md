@@ -1,37 +1,23 @@
-# Part1 For Users to Run the Code(only steps)
 
-- First Open docker, and in terminal
 
 # Part1 For Users to Run the Code(only steps)
 
-- First Open docker(desktop app version), and in terminal
+- First open docker(desktop app version), and in terminal to check if log in the docker app
   ```bash
   docker login
   ```
-
-  
 
 - For MacOs Users, remember to have XQuartz Installed and Setup, make sure docker connection( See Part 2)
 
 - Commands to Run
 
-  ```
+  ```bash
   # This works once you firstly open docker or you have some changes in github
-  docker pull  junhuuu/options:latest 
-  
-
-
-  # change file name in the SCRIPT_NAME to run different files
-  docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
-  ```
-
   docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
-
+  
   # change file name in the SCRIPT_NAME to run different files(Pay Attention To Lowercase And Uppercase)
   docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
-  ```
-
-
+  
 
   
 
@@ -75,9 +61,9 @@ docker pull  junhuuu/options:latest
 
 
 docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
-=======
+
 docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
->>>>>>> 3b21a2c6f39fa4777aaa4a46004c9024272fffab
+
 
 docker run --rm -e DISPLAY=host.docker.internal:0 \
            -e SCRIPT_NAME=blackScholes.py \
