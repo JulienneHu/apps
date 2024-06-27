@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Part 1For Users to Run the Code(only steps)
 
 - First Open docker, and in terminal
