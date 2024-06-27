@@ -49,7 +49,7 @@ class OptionPNLApp(QMainWindow):
         self.trade_date_input = create_input_field("Trade Date", '2024-05-08', control_layout)
         self.symbol_input = create_input_field("Symbol", 'MSFT', control_layout)
         self.strike_input = create_input_field("Strike Price", '415', control_layout)
-        self.expiration_input = create_input_field("Expiration Date", '2024-07-19', control_layout)
+        self.expiration_input = create_input_field("Expiration Date", '2024-06-21', control_layout)
         self.stock_trade_price_input = create_input_field("Stock Trade Price", '412.00', control_layout)
         self.effective_delta_input = create_input_field("Effective Delta", '0', control_layout)
         
