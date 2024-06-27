@@ -14,6 +14,10 @@ from datetime import datetime
 from realPrice.OptionPnl import main, calls_or_puts
 from realPrice.realOption import get_realtime_option_price
 
+from assets.stylesheet import stylesheet
+from assets.pnl_creations import pnl_create_input_field as create_input_field, create_combo_box
+
+
 # Dummy DataFrame to hold trade data
 trades_df = pd.DataFrame(columns=[
     'trade_date', 'symbol', 'strike', 'expiration', 'stock_trade_price', 'effective_delta',
@@ -22,59 +26,6 @@ trades_df = pd.DataFrame(columns=[
     'put_close_price', 'daily_pnl', 'change'
 ])
 
-stylesheet = """
-QWidget {
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 14px;
-    color: #333;
-    background-color: #f7f7f7;
-}
-QComboBox {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
-    height: 30px;
-    padding: 5px;
-    font-size: 14px;
-}
-QComboBox::drop-down {
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 15px;
-    border-left-width: 1px;
-    border-left-color: darkgray;
-    border-left-style: solid;
-    border-top-right-radius: 3px;
-    border-bottom-right-radius: 3px;
-}
-QComboBox QAbstractItemView {
-    selection-background-color: #ddd;
-}
-QLineEdit {
-    border: 1px solid #ccc;
-    padding: 5px;
-    border-radius: 4px;
-    background: white;
-    font-size: 14px;
-}
-QLabel {
-    font-size: 14px;
-}
-QPushButton {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 5px 10px;
-    background: #eee;
-    font-size: 14px;
-}
-QPushButton:pressed {
-    background: #ddd;
-}
-QPushButton:hover {
-    border-color: #bbb;
-    background: #e0e0e0;
-}
-"""
 
 class OptionPNLApp(QMainWindow):
     def __init__(self):
@@ -95,21 +46,27 @@ class OptionPNLApp(QMainWindow):
         control_panel = QFrame(central_widget)
         control_layout = QVBoxLayout(control_panel)
 
-        self.trade_date_input = self.create_input_field("Trade Date", '2024-05-08', control_layout)
-        self.symbol_input = self.create_input_field("Symbol", 'MSFT', control_layout)
-        self.strike_input = self.create_input_field("Strike Price", '415', control_layout)
-        self.expiration_input = self.create_input_field("Expiration Date", '2024-06-21', control_layout)
-        self.stock_trade_price_input = self.create_input_field("Stock Trade Price", '412.00', control_layout)
-        self.effective_delta_input = self.create_input_field("Effective Delta", '0', control_layout)
+        self.trade_date_input = create_input_field("Trade Date", '2024-05-08', control_layout)
+        self.symbol_input = create_input_field("Symbol", 'MSFT', control_layout)
+        self.strike_input = create_input_field("Strike Price", '415', control_layout)
+        self.expiration_input = create_input_field("Expiration Date", '2024-07-19', control_layout)
+        self.stock_trade_price_input = create_input_field("Stock Trade Price", '412.00', control_layout)
+        self.effective_delta_input = create_input_field("Effective Delta", '0', control_layout)
         
-        self.call_action_type_input = self.create_combo_box("Call Action Type", ["buy", "sell"], control_layout)
-        self.put_action_type_input = self.create_combo_box("Put Action Type", ["buy", "sell"], control_layout)
+        self.call_action_type_input = create_combo_box("Call Action Type", ["buy", "sell"], control_layout)
+        self.put_action_type_input = create_combo_box("Put Action Type", ["buy", "sell"], control_layout)
         
-        self.num_call_contracts_input = self.create_input_field("NCall Contracts", '1', control_layout)
-        self.num_put_contracts_input = self.create_input_field("NPut Contracts", '1', control_layout)
+        self.num_call_contracts_input = create_input_field("NCall Contracts", '1', control_layout)
+        self.num_put_contracts_input = create_input_field("NPut Contracts", '1', control_layout)
         
-        self.put_trade_price_input = self.create_input_field("Put Trade Price", '12', control_layout)
-        self.call_trade_price_input = self.create_input_field("Call Trade Price", '11', control_layout)
+        self.put_trade_price_input = create_input_field("Put Trade Price", '12', control_layout)
+        self.call_trade_price_input = create_input_field("Call Trade Price", '11', control_layout)
+        
+        # for all input fields, after return pressed, add_trade will be called
+        for input_field in [self.trade_date_input.input_field, self.symbol_input.input_field, self.strike_input.input_field, self.expiration_input.input_field,
+                            self.stock_trade_price_input.input_field, self.effective_delta_input.input_field, self.num_call_contracts_input.input_field,
+                            self.num_put_contracts_input.input_field, self.put_trade_price_input.input_field, self.call_trade_price_input.input_field]:
+            input_field.returnPressed.connect(self.add_trade)
         
         self.add_trade_button = QPushButton("Add Trade")
         self.add_trade_button.clicked.connect(self.add_trade)
@@ -131,52 +88,6 @@ class OptionPNLApp(QMainWindow):
 
         self.show()
 
-    def create_input_field(self, label, default_value, layout, editable=True):
-        container = QWidget()
-        field_layout = QHBoxLayout()
-        field_layout.setContentsMargins(0, 0, 0, 0)
-        field_layout.setSpacing(10)
-        
-        lbl = QLabel(label)
-        lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
-        
-        input_field = QLineEdit(default_value)
-        input_field.setAlignment(Qt.AlignCenter)
-        input_field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        input_field.setReadOnly(not editable)
-        
-        if editable:
-            input_field.returnPressed.connect(self.update_plot)
-        
-        field_layout.addWidget(lbl)
-        field_layout.addWidget(input_field)
-        container.setLayout(field_layout)
-        layout.addWidget(container)
-        container.input_field = input_field
-        return container
-
-    def create_combo_box(self, label, options, layout):
-        container = QWidget()
-        field_layout = QHBoxLayout()
-        field_layout.setContentsMargins(0, 0, 0, 0)
-        field_layout.setSpacing(10)
-        
-        lbl = QLabel(label)
-        lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
-        
-        combo_box = QComboBox()
-        combo_box.addItems(options)
-        combo_box.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        combo_box.setEditable(True)
-        combo_box.lineEdit().setAlignment(Qt.AlignCenter)
-        combo_box.lineEdit().setReadOnly(True)
-
-        field_layout.addWidget(lbl)
-        field_layout.addWidget(combo_box)
-        container.setLayout(field_layout)
-        layout.addWidget(container)
-        container.combo_box = combo_box
-        return container
 
     def calculate_pnl(self, call_action, put_action, NC, C_0, C_t, NP, P_0, P_t, effectice_delta, trade_price, current_price):
         if call_action == "sell" and put_action == "sell":
@@ -233,9 +144,9 @@ class OptionPNLApp(QMainWindow):
         if option_data is not None and not option_data.empty:
             for _, row in option_data.iterrows():
                 daily_pnl = self.calculate_pnl(call_action_type, put_action_type,
-                                               num_call_contracts, call_trade_price, row['call_close_price'],
-                                               num_put_contracts, put_trade_price, row['put_close_price'],
-                                               effective_delta, stock_trade_price, row['stock_close_price'])
+                                            num_call_contracts, call_trade_price, row['call_close_price'],
+                                            num_put_contracts, put_trade_price, row['put_close_price'],
+                                            effective_delta, stock_trade_price, row['stock_close_price'])
                 daily_pnl = round(daily_pnl, 2)
                 investment = ((num_call_contracts * call_trade_price) + (num_put_contracts * put_trade_price)) * 100
                 change = round(daily_pnl / investment * 100, 2)
@@ -258,6 +169,35 @@ class OptionPNLApp(QMainWindow):
                     'daily_pnl': daily_pnl,
                     'change': change
                 }
+
+                # Check if the trade already exists in the DataFrame
+                exists = self.trades[
+                    (self.trades['trade_date'] == new_trade['trade_date']) &
+                    (self.trades['symbol'] == new_trade['symbol']) &
+                    (self.trades['strike'] == new_trade['strike']) &
+                    (self.trades['expiration'] == new_trade['expiration']) &
+                    (self.trades['stock_trade_price'] == new_trade['stock_trade_price']) &
+                    (self.trades['effective_delta'] == new_trade['effective_delta']) &
+                    (self.trades['call_trade_price'] == new_trade['call_trade_price']) &
+                    (self.trades['call_action_type'] == new_trade['call_action_type']) &
+                    (self.trades['num_call_contracts'] == new_trade['num_call_contracts']) &
+                    (self.trades['put_trade_price'] == new_trade['put_trade_price']) &
+                    (self.trades['put_action_type'] == new_trade['put_action_type']) &
+                    (self.trades['num_put_contracts'] == new_trade['num_put_contracts']) &
+                    (self.trades['stock_close_price'] == new_trade['stock_close_price']) &
+                    (self.trades['call_close_price'] == new_trade['call_close_price']) &
+                    (self.trades['put_close_price'] == new_trade['put_close_price']) &
+                    (self.trades['daily_pnl'] == new_trade['daily_pnl']) &
+                    (self.trades['change'] == new_trade['change'])
+                ]
+                
+                # if today's trade have multiple trades, we only keep the last one
+                if not exists.empty:
+                    self.trades = self.trades.drop(exists.index)
+
+                if not exists.empty:
+                    print("Trade already exists. Skipping duplicate entry.")
+                    continue
 
                 # Add the new trade to the DataFrame
                 new_df = pd.DataFrame([new_trade])
@@ -289,8 +229,9 @@ class OptionPNLApp(QMainWindow):
             (self.trades['num_call_contracts'] == num_call_contracts) &
             (self.trades['num_put_contracts'] == num_put_contracts) &
             (self.trades['stock_trade_price'] == trade_price) &
-            (self.trades['effective_delta'] == effective_delta)
+            (self.trades['effective_delta'] == effective_delta)     
         ]
+        
 
         if not filtered_data.empty:
             filtered_data = filtered_data.sort_values(by='trade_date')
@@ -331,7 +272,6 @@ class OptionPNLApp(QMainWindow):
 
             cursor = mplcursors.cursor(scatter, hover=True)
             cursor.connect("add", lambda sel: sel.annotation.set_text(filtered_data['hover_text'].iloc[sel.index]))
-            
             self.canvas.draw()
         else:
             print("No data to display for selected filters.")

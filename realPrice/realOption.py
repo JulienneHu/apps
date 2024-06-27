@@ -36,21 +36,11 @@ def get_realtime_option_price(option_name):
         last_price = specific_opt["lastPrice"].iloc[0] if not specific_opt.empty else "N/A"
         print(f"Today is {market_status}, the market is closed. The last recorded transaction price of {option_name} was {last_price}.")
     else:
-        market_open = datetime.strptime("09:30", "%H:%M").time()
-        market_close = datetime.strptime("16:00", "%H:%M").time()
-
-        eastern = pytz.timezone('US/Eastern')
-        current_time_et = datetime.now(eastern).time()
-
-        if market_open <= current_time_et <= market_close:
-            last_price = specific_opt["lastPrice"].iloc[0]
-            ask_price = specific_opt["ask"].iloc[0]
-            bid_price = specific_opt["bid"].iloc[0]
-            print(f"Market is open. Last price: {last_price}, Ask: {ask_price}, Bid: {bid_price}.")
-        else:
-            last_price = specific_opt["lastPrice"].iloc[0]
-            print(f"Market is closed. The last recorded transaction price of {option_name} was {last_price}.")
-    
+        last_price = specific_opt["lastPrice"].iloc[0]
+        ask_price = specific_opt["ask"].iloc[0]
+        bid_price = specific_opt["bid"].iloc[0]
+        print(f"Last price: {last_price}, Ask: {ask_price}, Bid: {bid_price}.")
+        
     return last_price, ask_price, bid_price
 
 def calls_or_puts(company, date, strike):

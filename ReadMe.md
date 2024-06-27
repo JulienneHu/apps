@@ -20,7 +20,7 @@
   docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
   ```
 
-  
+  docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
 
   
 
@@ -49,7 +49,7 @@
   In xquartz
 
   ```bash
-  xhost 
+  xhost +
   ```
 
 
@@ -62,7 +62,7 @@ docker build --no-cache -t junhuuu/options:latest .
 
 docker pull  junhuuu/options:latest 
 
-docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl_new.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
+docker run -e DISPLAY=host.docker.internal:0 -e SCRIPT_NAME=pnl.py -v /tmp/.X11-unix:/tmp/.X11-unix -p 4000:80 junhuuu/options
 
 docker run --rm -e DISPLAY=host.docker.internal:0 \
            -e SCRIPT_NAME=blackScholes.py \
