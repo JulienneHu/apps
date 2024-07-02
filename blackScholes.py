@@ -13,10 +13,10 @@ import logging
 
 from realPrice.realStock import get_realtime_stock_price
 from realPrice.realOption import get_realtime_option_price, calls_or_puts
-from assets.stylesheet import stylesheet
-from assets.creations import create_input_field, create_date_field
-from assets.BsCal import BlackScholes
-from assets.BsFetch import FetchStockThread, FetchOptionThread
+from tools.stylesheet import stylesheet
+from tools.creations import create_input_field, create_date_field
+from tools.BsCal import BlackScholes
+from tools.BsFetch import FetchStockThread, FetchOptionThread
 
 
 class OptionStrategyVisualizer(QMainWindow):
@@ -111,60 +111,7 @@ class OptionStrategyVisualizer(QMainWindow):
         grid_layout.addWidget(control_panel, 0, 0)
         self.show()
 
-    # def create_input_field(self, label, default_value, editable=True):
-    #     container = QWidget()
-    #     layout = QHBoxLayout()
-    #     layout.setContentsMargins(0, 0, 0, 0)
-    #     layout.setSpacing(5)
-        
-    #     lbl = QLabel(label)
-    #     font = QFont()
-    #     font.setPointSize(32)
-    #     lbl.setFont(font)
-    #     lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
-        
-    #     input_field = QLineEdit(default_value)
-    #     input_field.setAlignment(Qt.AlignCenter)
-    #     input_field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-    #     input_field.setReadOnly(not editable)
-        
-    #     layout.addWidget(lbl)
-    #     layout.addWidget(input_field)
-        
-    #     layout.setStretch(0, 0)
-    #     layout.setStretch(1, 1)
-        
-    #     container.setLayout(layout)
-    #     container.input_field = input_field
-    #     return container
-
-    # def create_date_field(self, label, default_value):
-    #     container = QWidget()
-    #     layout = QHBoxLayout()
-    #     layout.setContentsMargins(0, 0, 0, 0)
-    #     layout.setSpacing(5)
-        
-    #     lbl = QLabel(label)
-    #     font = QFont()
-    #     font.setPointSize(32)
-    #     lbl.setFont(font)
-    #     lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
-        
-    #     date_input = QDateEdit(QDate.fromString(default_value, "yyyy-MM-dd"))
-    #     date_input.setCalendarPopup(True)
-    #     date_input.setDisplayFormat("yyyy-MM-dd")
-    #     date_input.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        
-    #     layout.addWidget(lbl)
-    #     layout.addWidget(date_input)
-        
-    #     layout.setStretch(0, 0)
-    #     layout.setStretch(1, 1)
-        
-    #     container.setLayout(layout)
-    #     container.input_field = date_input
-    #     return container
-    
+  
     def fetch_data(self):
         company = self.symbol_input.input_field.text()
         date = self.date_input.input_field.text()
