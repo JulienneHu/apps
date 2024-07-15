@@ -49,7 +49,7 @@ class OptionStrategyVisualizer(QMainWindow):
         
         input_layout_t = QHBoxLayout()
         self.calcT_input = create_input_field('CalcT', '0', False)
-        self.time_input = create_input_field('T', '50', False)
+        self.time_input = create_input_field('T', '50')
         input_layout_t.addWidget(self.time_input)
         input_layout_t.addWidget(self.calcT_input)
         
