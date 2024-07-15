@@ -249,19 +249,18 @@ class OptionStrategyVisualizer(QMainWindow):
         trade_type = self.trade_type_combo.currentText()
         if trade_type == 'Buy Call-Buy Put':
             y_option = n_call * (call_at_maturity - call_premium) + n_put * (put_at_maturity - put_premium)
-            y_stock = n_call * delta_call * (S_grid - stock_price) + n_put * delta_put * (S_grid - stock_price)
+            y_stock  = n_call * delta_call * (stock_price - S_grid) + n_put * delta_put * (stock_price - S_grid)
             effective_delta = -n_call * delta_call - n_put * delta_put
         if trade_type == 'Buy Call-Sell Put':
-            y_option = n_call * (call_at_maturity - call_premium) - n_put * (put_at_maturity - put_premium)
-            y_stock = n_call * delta_call * (S_grid - stock_price) - n_put * delta_put * (S_grid - stock_price)
+            y_option = n_call * (call_at_maturity - call_premium) + n_put * (put_premium - put_at_maturity)
             effective_delta = -n_call * delta_call + n_put * delta_put
         if trade_type == 'Sell Call-Buy Put':
-            y_option = -n_call * (call_at_maturity - call_premium) + n_put * (put_at_maturity - put_premium)
-            y_stock = -n_call * delta_call * (S_grid - stock_price) + n_put * delta_put * (S_grid - stock_price)
+            y_option = n_call * (call_premium - call_at_maturity) + n_put * (put_at_maturity - put_premium)
+            y_stock  = n_call * delta_call * (S_grid - stock_price) + n_put * delta_put * (stock_price - S_grid)
             effective_delta = n_call * delta_call - n_put * delta_put
         if trade_type == 'Sell Call-Sell Put': 
-            y_option = -n_call * (call_at_maturity - call_premium) - n_put * (put_at_maturity - put_premium)
-            y_stock = -n_call * delta_call * (S_grid - stock_price) - n_put * delta_put * (S_grid - stock_price)
+            y_option = n_call * (call_premium - call_at_maturity) + n_put * (put_premium - put_at_maturity)
+            y_stock  = n_call * delta_call * (S_grid - stock_price) + n_put * delta_put * (S_grid - stock_price)
             effective_delta = n_call * delta_call + n_put * delta_put
 
         # Plotting logic

@@ -172,15 +172,15 @@ class OptionStrategyVisualizer(QMainWindow):
         # Input Fields
         # Adjust the layout for the input fields to be in lines
         input_layout_1 = QHBoxLayout()
-        self.symbol_input = self.create_input_field('Symbol', 'AAPL')  # Default symbol
+        self.symbol_input = self.create_input_field('Symbol', 'ASML')  # Default symbol
         input_layout_1.addWidget(self.symbol_input)
         
         input_layout_2 = QHBoxLayout()
-        self.date_input = self.create_input_field('Maturity_Date', '2024-06-21')  # Default date
+        self.date_input = self.create_input_field('Maturity_Date', '2024-08-16')  # Default date
         input_layout_2.addWidget(self.date_input)
         
         input_layout_3 = QHBoxLayout()
-        self.x_input = self.create_input_field('Strike_Price', '180')
+        self.x_input = self.create_input_field('Strike_Price', '1070')
         input_layout_3.addWidget(self.x_input)
 
         self.fetch_data_button = QPushButton('Fetch Data / Refresh', control_panel)
@@ -189,7 +189,7 @@ class OptionStrategyVisualizer(QMainWindow):
 
            
         input_layout_4 = QHBoxLayout()
-        self.call_premium_input = self.create_input_field('C', '9.8', False)
+        self.call_premium_input = self.create_input_field('C', '53.03', False)
         self.call_open_interest_input = self.create_input_field('C_OI', '0', False)
         self.call_volume_input = self.create_input_field('C_Vol', '0', False)
         input_layout_4.addWidget(self.call_premium_input)
@@ -198,7 +198,7 @@ class OptionStrategyVisualizer(QMainWindow):
 
         
         input_layout_5 = QHBoxLayout()
-        self.put_premium_input = self.create_input_field('P', '14.5', False)
+        self.put_premium_input = self.create_input_field('P', '0.00', False)
         self.put_open_interest_input = self.create_input_field('P_OI', '0', False)
         self.put_volume_input = self.create_input_field('P_Vol', '0', False)    
         input_layout_5.addWidget(self.put_premium_input)
@@ -206,7 +206,7 @@ class OptionStrategyVisualizer(QMainWindow):
         input_layout_5.addWidget(self.put_volume_input)
         
         input_layout_6 = QHBoxLayout()
-        self.stock_price_input = self.create_input_field('SPrice', '150', False)
+        self.stock_price_input = self.create_input_field('SPrice', '1064', False)
         self.price_change_input = self.create_input_field('Real', '0', False)
         self.percent_change_input = self.create_input_field('Pct', '0', False)
         input_layout_6.addWidget(self.stock_price_input)
@@ -215,8 +215,8 @@ class OptionStrategyVisualizer(QMainWindow):
        
 
         input_layout_7 = QHBoxLayout()
-        self.y_min_input = self.create_input_field('Y_Min', '-1000')
-        self.y_max_input = self.create_input_field('Y_Max', '1000')
+        self.y_min_input = self.create_input_field('Y_Min', '-6000')
+        self.y_max_input = self.create_input_field('Y_Max', '6000')
         self.stock_range_input = self.create_input_field('SRange', '0.25')
         input_layout_7.addWidget(self.y_min_input)
         input_layout_7.addWidget(self.y_max_input)
@@ -312,8 +312,6 @@ class OptionStrategyVisualizer(QMainWindow):
         container.input_field = input_field
         return container
 
-
-
     def update_plot(self):
         
         if 'NA' in [self.stock_price_input.input_field.text(), self.call_premium_input.input_field.text(), 
@@ -354,25 +352,25 @@ class OptionStrategyVisualizer(QMainWindow):
         trade_type = self.trade_type_combo.currentText()
         if trade_type == 'Buy Call-Buy Put':
             y_option = n_call * (call_at_maturity - call_premium) + n_put * (put_at_maturity - put_premium)
-            y_stock = n_call * delta_call * (S_grid - stock_price) + n_put * delta_put * (S_grid - stock_price)
+            y_stock = n_call * delta_call * (stock_price - S_grid) + n_put * delta_put * (stock_price - S_grid)
             effective_delta = -n_call * delta_call - n_put * delta_put
             self.call_action = 'Buy'
             self.put_action = 'Buy'
         if trade_type == 'Buy Call-Sell Put':
-            y_option = n_call * (call_at_maturity - call_premium) - n_put * (put_at_maturity - put_premium)
-            y_stock = n_call * delta_call * (S_grid - stock_price) - n_put * delta_put * (S_grid - stock_price)
+            y_option = n_call * (call_at_maturity - call_premium) + n_put * (put_premium - put_at_maturity)
+            y_stock = n_call * delta_call * (stock_price - S_grid) + n_put * delta_put * (S_grid - stock_price)
             effective_delta = -n_call * delta_call + n_put * delta_put
             self.call_action = 'Buy'
             self.put_action = 'Sell'
         if trade_type == 'Sell Call-Buy Put':
-            y_option = -n_call * (call_at_maturity - call_premium) + n_put * (put_at_maturity - put_premium)
-            y_stock = -n_call * delta_call * (S_grid - stock_price) + n_put * delta_put * (S_grid - stock_price)
+            y_option = n_call * (call_premium - call_at_maturity) + n_put * (put_at_maturity - put_premium)
+            y_stock = n_call * delta_call * (S_grid - stock_price) + n_put * delta_put * (stock_price - S_grid)
             effective_delta = n_call * delta_call - n_put * delta_put
             self.call_action = 'Sell'
             self.put_action = 'Buy'
         if trade_type == 'Sell Call-Sell Put': 
-            y_option = -n_call * (call_at_maturity - call_premium) - n_put * (put_at_maturity - put_premium)
-            y_stock = -n_call * delta_call * (S_grid - stock_price) - n_put * delta_put * (S_grid - stock_price)
+            y_option = n_call * (call_premium - call_at_maturity) + n_put * (put_premium - put_at_maturity)
+            y_stock = n_call * delta_call * (S_grid - stock_price) + n_put * delta_put * (S_grid - stock_price)
             effective_delta = n_call * delta_call + n_put * delta_put
             self.call_action = 'Sell'
             self.put_action = 'Sell'
