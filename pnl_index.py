@@ -18,7 +18,6 @@ from realPrice.realOption import get_realtime_option_price
 from tools.stylesheet import stylesheet
 from tools.pnl_creations import pnl_create_input_field as create_input_field, create_combo_box
 
-
 # Dummy DataFrame to hold trade data
 trades_df = pd.DataFrame(columns=[
     'trade_date', 'symbol', 'strike', 'expiration', 'stock_trade_price', 'effective_delta',
@@ -26,7 +25,6 @@ trades_df = pd.DataFrame(columns=[
     'put_action_type', 'num_put_contracts', 'stock_close_price', 'call_close_price',
     'put_close_price', 'daily_pnl', 'change'
 ])
-
 
 class OptionPNLApp(QMainWindow):
     def __init__(self):
@@ -61,8 +59,8 @@ class OptionPNLApp(QMainWindow):
         self.num_call_contracts_input = create_input_field("NCall Contracts", '1', control_layout)
         self.num_put_contracts_input = create_input_field("NPut Contracts", '1', control_layout)
         
-        self.put_trade_price_input = create_input_field("Put Trade Price", '12', control_layout)
         self.call_trade_price_input = create_input_field("Call Trade Price", '11', control_layout)
+        self.put_trade_price_input = create_input_field("Put Trade Price", '12', control_layout)
         
         # for all input fields, after return pressed, add_trade will be called
         for input_field in [self.trade_date_input.input_field, self.symbol_input.input_field, self.strike_input.input_field, self.expiration_input.input_field,
