@@ -45,10 +45,11 @@ class FetchOptionThread(QThread):
         return True
 
     def run(self):
-        prices, ask_prices, bid_prices = [None, None], [None, None], [None, None]
-        if self.market_open():
-            options = calls_or_puts(self.company, self.date, self.strike)
-            if options and len(options) == 2:
-                prices[0], ask_prices[0], bid_prices[0] = get_realtime_option_price(options[0])
-                prices[1], ask_prices[1], bid_prices[1] = get_realtime_option_price(options[1])
+        prices, ask_prices, bid_prices = ['NA', 'NA'], ['NA', 'NA'], ['NA', 'NA']   
+        
+        options = calls_or_puts(self.company, self.date, self.strike)
+        if options and len(options) == 2:
+            prices[0], ask_prices[0], bid_prices[0] = get_realtime_option_price(options[0])
+            prices[1], ask_prices[1], bid_prices[1] = get_realtime_option_price(options[1])
+
         self.data_fetched.emit(prices, ask_prices, bid_prices)

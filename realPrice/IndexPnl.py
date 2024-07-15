@@ -66,7 +66,8 @@ def calls_and_puts(company='SPX', date='2024-05-02', strike=4500):
     call_symbol = call_data['contractSymbol'].values[0]
     options.append(call_symbol)
     put_symbol = put_data['contractSymbol'].values[0]
-    options.append(put_symbol)  
+    options.append(put_symbol) 
+    return options 
     
 def main(company='SPX', date='2024-05-02', strike=4500, trade_date='2024-05-16'):
     # Fetch ticker information
@@ -134,7 +135,7 @@ def main(company='SPX', date='2024-05-02', strike=4500, trade_date='2024-05-16')
         print("Could not retrieve data for one or more options.")
         return None
     
-main('^SPX', '2024-07-19', 4500, '2024-05-16')
+
 
 
 

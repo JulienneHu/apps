@@ -4,7 +4,8 @@ import yfinance as yf
 import holidays
 import pytz
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton, QGridLayout, QFrame, QWidget, QHBoxLayout, QSizePolicy
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtGui import QMovie
 import matplotlib.pyplot as plt
 import mplcursors
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -71,6 +72,20 @@ class OptionPNLApp(QMainWindow):
         self.add_trade_button = QPushButton("Add Trade")
         self.add_trade_button.clicked.connect(self.add_trade)
         control_layout.addWidget(self.add_trade_button)
+        
+        # Add status label
+        self.status_label = QLabel("")
+        control_layout.addWidget(self.status_label)
+
+        # Add loading spinner
+        self.loading_spinner = QLabel()
+        self.loading_spinner.setAlignment(Qt.AlignCenter)
+        movie = QMovie('./tools/loading.gif')
+        movie.setScaledSize(QSize(50, 50))   
+        self.loading_spinner.setMovie(movie)
+        movie.start()
+        control_layout.addWidget(self.loading_spinner)
+        self.loading_spinner.hide()
 
         control_panel.setLayout(control_layout)
         control_panel.setMaximumWidth(400)
@@ -110,6 +125,10 @@ class OptionPNLApp(QMainWindow):
         return market_open <= current_time_et <= market_close and today.weekday() < 5 and today not in holidays.US() 
     
     def add_trade(self):
+        # Show the loading spinner
+        self.loading_spinner.show()
+        self.status_label.setText("Adding trade...")
+        
         # Get input values
         trade_date = self.trade_date_input.input_field.text()
         symbol = self.symbol_input.input_field.text()
@@ -201,7 +220,10 @@ class OptionPNLApp(QMainWindow):
                 new_df = pd.DataFrame([new_trade])
                 self.trades = pd.concat([self.trades, new_df], ignore_index=True)
 
+            
             self.update_plot()
+            self.status_label.setText("Trade added successfully!")
+            self.loading_spinner.hide()
         else:
             print("No data found or unable to retrieve data.")
 

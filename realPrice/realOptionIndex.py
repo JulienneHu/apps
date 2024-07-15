@@ -15,8 +15,7 @@ def get_option_chain(company='SPX', date='2024-05-02', strike=4500):
 def main(company='SPX', date='2024-05-02', strike=4500):
     # Fetch ticker information
     ticker = yf.Ticker(company)
-    
-    # Fetch option chains for the specified date
+
     try:
         option_chain = ticker.option_chain(date)
     except ValueError as e:

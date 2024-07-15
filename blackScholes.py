@@ -40,11 +40,18 @@ class OptionStrategyVisualizer(QMainWindow):
         curr = datetime.now().strftime('%Y-%m-%d-%H-%M') 
         self.today_date = create_input_field('Today', curr)
         self.date_input = create_date_field('Maturity', '2024-07-19')
+        self.date_input.input_field.dateChanged.connect(self.update_calculation_based_on_date)
         self.x_input = create_input_field('Strike', '210')
         input_layout_1.addWidget(self.symbol_input)
         input_layout_1.addWidget(self.today_date)
         input_layout_1.addWidget(self.date_input)
         input_layout_1.addWidget(self.x_input)
+        
+        input_layout_t = QHBoxLayout()
+        self.calcT_input = create_input_field('CalcT', '0', False)
+        self.time_input = create_input_field('T', '50', False)
+        input_layout_t.addWidget(self.time_input)
+        input_layout_t.addWidget(self.calcT_input)
         
         input_layout_2 = QHBoxLayout()
         self.interest_input = create_input_field('r', '0.07')
@@ -79,11 +86,9 @@ class OptionStrategyVisualizer(QMainWindow):
         input_layout_6.addWidget(self.put_ask_input)
         input_layout_6.addWidget(self.put_bid_input)
         
-        input_layout_7 = QHBoxLayout()
-        self.time_input = create_input_field('T', '50', False)
+        input_layout_7 = QHBoxLayout()   
         self.impvC_input = create_input_field('C_IMPV', '0.00', False)
         self.impvP_input = create_input_field('P_IMPV', '0.00', False)
-        input_layout_7.addWidget(self.time_input)
         input_layout_7.addWidget(self.impvC_input)
         input_layout_7.addWidget(self.impvP_input)
 
@@ -100,6 +105,7 @@ class OptionStrategyVisualizer(QMainWindow):
         input_layout_9.addWidget(self.put_delta_input)
 
         control_layout.addLayout(input_layout_1)
+        control_layout.addLayout(input_layout_t)
         control_layout.addLayout(input_layout_2)
         control_layout.addWidget(self.fetch_data_button)
         control_layout.addLayout(input_layout_4)
@@ -110,14 +116,13 @@ class OptionStrategyVisualizer(QMainWindow):
         control_layout.addLayout(input_layout_9)
         grid_layout.addWidget(control_panel, 0, 0)
         self.show()
-
+        self.calculate_T_days(self.date_input.input_field.text())
   
     def fetch_data(self):
         company = self.symbol_input.input_field.text()
         date = self.date_input.input_field.text()
         strike = float(self.x_input.input_field.text())
-
-        self.fetch_stock_price(company)
+        T = int(self.time_input.input_field.text())
 
         self.fetch_stock_price(company)
 
@@ -126,15 +131,7 @@ class OptionStrategyVisualizer(QMainWindow):
             stock_price = float(stock_price)
 
         self.update_option_premiums()
-        
-        today_date = self.today_date.input_field.text()
-        today_date = today_date[:10]
-        maturity_date = self.date_input.input_field.text()
-        T = QDate.fromString(today_date, "yyyy-MM-dd").daysTo(QDate.fromString(maturity_date, "yyyy-MM-dd"))
-        if datetime.now().hour >= 14:
-            T -= 1
-        self.time_input.input_field.setText(str(T))
-        
+
         call_premium = None
         put_premium = None
         call_ask = None
@@ -147,43 +144,45 @@ class OptionStrategyVisualizer(QMainWindow):
         put_delta = None
         impvC = None
         impvP = None
-        
+
         if stock_price and self.call_premium_input.input_field.text() != 'NA' and self.put_premium_input.input_field.text() != 'NA':
             r = float(self.interest_input.input_field.text())
             sigma = float(self.volatility_input.input_field.text())
             T = T / 365.0
-           
+
             call_premium = float(self.call_premium_input.input_field.text())
             put_premium = float(self.put_premium_input.input_field.text())
-            
+
             impvC = BlackScholes().blsimpv('c', stock_price, strike, T, r, call_premium, sigma)
             impvP = BlackScholes().blsimpv('p', stock_price, strike, T, r, put_premium, sigma)
 
             self.impvC_input.input_field.setText("{:.2f}".format(impvC) if impvC is not None else "NA")
             self.impvP_input.input_field.setText("{:.2f}".format(impvP) if impvP is not None else "NA")
 
+            # Safely handle call and put ask/bid values if they are 'NA'
+            call_ask = self.call_ask_input.input_field.text()
+            call_bid = self.call_bid_input.input_field.text()
+            put_ask = self.put_ask_input.input_field.text()
+            put_bid = self.put_bid_input.input_field.text()
+
             call_price = BlackScholes().blsprice('c', stock_price, strike, T, r, sigma)
             put_price = BlackScholes().blsprice('p', stock_price, strike, T, r, sigma)
-            
-            call_ask = float(self.call_ask_input.input_field.text())
-            call_bid = float(self.call_bid_input.input_field.text())
-            put_ask = float(self.put_ask_input.input_field.text())
-            put_bid = float(self.put_bid_input.input_field.text())
 
-            if call_price > call_ask:
+            # Check if values are not 'NA' before converting and comparing
+            if call_ask != 'NA' and call_price > float(call_ask):
                 self.call_price_input.input_field.setStyleSheet("color: #007560;")
-            elif call_price < call_bid:
+            elif call_bid != 'NA' and call_price < float(call_bid):
                 self.call_price_input.input_field.setStyleSheet("color: #bd1414;")
             else:
                 self.call_price_input.input_field.setStyleSheet("color: black;")
 
-            if put_price > put_ask:
+            if put_ask != 'NA' and put_price > float(put_ask):
                 self.put_price_input.input_field.setStyleSheet("color: #007560;")
-            elif put_price < put_bid:
+            elif put_bid != 'NA' and put_price < float(put_bid):
                 self.put_price_input.input_field.setStyleSheet("color: #bd1414;")
             else:
                 self.put_price_input.input_field.setStyleSheet("color: black;")
-                
+                    
             self.call_price_input.input_field.setText("{:.2f}".format(call_price))
             self.put_price_input.input_field.setText("{:.2f}".format(put_price))
 
@@ -198,7 +197,7 @@ class OptionStrategyVisualizer(QMainWindow):
             self.put_price_input.input_field.setText("NA")
             self.call_delta_input.input_field.setText("NA")
             self.put_delta_input.input_field.setText("NA")
-        
+
     def fetch_stock_price(self, company):
         if hasattr(self, 'stock_fetch_thread'):
             self.stock_fetch_thread.quit()
@@ -263,6 +262,17 @@ class OptionStrategyVisualizer(QMainWindow):
             self.call_delta_input.input_field.setText("NA")
             self.put_delta_input.input_field.setText("NA")
             return
+    
+    def update_calculation_based_on_date(self):
+        maturity_date = self.date_input.input_field.text()
+        self.calculate_T_days(maturity_date)
+
+    def calculate_T_days(self, maturity_date):
+        today_date = self.today_date.input_field.text()[:10]
+        calcT = QDate.fromString(today_date, "yyyy-MM-dd").daysTo(QDate.fromString(maturity_date, "yyyy-MM-dd"))
+        if datetime.now().hour >= 14:  # adjust for market close times if relevant
+            calcT -= 1
+        self.calcT_input.input_field.setText(str(calcT))
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
