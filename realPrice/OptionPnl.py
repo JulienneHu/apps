@@ -113,8 +113,6 @@ def main(company='ADBE', strike_date='2024-08-16', strike=470, trade_date='2024-
             # sort data by date
             df = df.sort_values(by='date')
        
-            # create a list to have all the dates from trade_date to today excluding weekends and holidays
-            trade_date = '2024-06-12'
             today = datetime.now().date()-timedelta(days=1)
             us_holidays = holidays.US(years=[2024])
             allday = pd.date_range(trade_date, today).strftime('%Y-%m-%d')
