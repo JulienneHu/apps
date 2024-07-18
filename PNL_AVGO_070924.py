@@ -18,7 +18,6 @@ from realPrice.realOption import get_realtime_option_price
 from tools.stylesheet import stylesheet
 from tools.pnl_creations import pnl_create_input_field as create_input_field, create_combo_box
 
-
 # Dummy DataFrame to hold trade data
 trades_df = pd.DataFrame(columns=[
     'trade_date', 'symbol', 'strike', 'expiration', 'stock_trade_price', 'effective_delta',
@@ -46,21 +45,21 @@ class OptionPNLApp(QMainWindow):
         control_panel = QFrame(central_widget)
         control_layout = QVBoxLayout(control_panel)
 
-        self.trade_date_input = create_input_field("Trade Date", '2024-07-10', control_layout)
-        self.symbol_input = create_input_field("Symbol", 'ADBE', control_layout)
-        self.strike_input = create_input_field("Strike Price", '575', control_layout)
+        self.trade_date_input = create_input_field("Trade Date", '2024-07-09', control_layout)
+        self.symbol_input = create_input_field("Symbol", 'AVGO', control_layout)
+        self.strike_input = create_input_field("Strike Price", '173', control_layout)
         self.expiration_input = create_input_field("Expiration Date", '2024-08-16', control_layout)
         self.stock_trade_price_input = create_input_field("Stock Trade Price", '0.00', control_layout)
         self.effective_delta_input = create_input_field("Effective Delta", '0', control_layout)
         
         self.call_action_type_input = create_combo_box("Call Action Type", ["buy"], control_layout)
-        self.put_action_type_input = create_combo_box("Put Action Type", ["buy"], control_layout)
+        self.put_action_type_input = create_combo_box("Put Action Type", ["sell"], control_layout)
         
-        self.num_call_contracts_input = create_input_field("NCall Contracts", '2', control_layout)
-        self.num_put_contracts_input = create_input_field("NPut Contracts", '0', control_layout)
+        self.num_call_contracts_input = create_input_field("NCall Contracts", '0', control_layout)
+        self.num_put_contracts_input = create_input_field("NPut Contracts", '50', control_layout)
         
-        self.call_trade_price_input = create_input_field("Call Trade Price", '15.15', control_layout)
-        self.put_trade_price_input = create_input_field("Put Trade Price", '0.00', control_layout)
+        self.call_trade_price_input = create_input_field("Call Trade Price", '0.00', control_layout)
+        self.put_trade_price_input = create_input_field("Put Trade Price", '18.40', control_layout)
         
         # for all input fields, after return pressed, add_trade will be called
         for input_field in [self.trade_date_input.input_field, self.symbol_input.input_field, self.strike_input.input_field, self.expiration_input.input_field,

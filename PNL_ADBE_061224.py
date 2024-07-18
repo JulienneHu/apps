@@ -18,7 +18,6 @@ from realPrice.realOption import get_realtime_option_price
 from tools.stylesheet import stylesheet
 from tools.pnl_creations import pnl_create_input_field as create_input_field, create_combo_box
 
-
 # Dummy DataFrame to hold trade data
 trades_df = pd.DataFrame(columns=[
     'trade_date', 'symbol', 'strike', 'expiration', 'stock_trade_price', 'effective_delta',
@@ -26,7 +25,6 @@ trades_df = pd.DataFrame(columns=[
     'put_action_type', 'num_put_contracts', 'stock_close_price', 'call_close_price',
     'put_close_price', 'daily_pnl', 'change'
 ])
-
 
 class OptionPNLApp(QMainWindow):
     def __init__(self):
@@ -102,7 +100,6 @@ class OptionPNLApp(QMainWindow):
         grid_layout.addWidget(self.toolbar, 1, 1)
 
         self.show()
-
 
     def calculate_pnl(self, call_action, put_action, NC, C_0, C_t, NP, P_0, P_t, effectice_delta, trade_price, current_price):
         if call_action == "sell" and put_action == "sell":
@@ -252,7 +249,6 @@ class OptionPNLApp(QMainWindow):
             (self.trades['effective_delta'] == effective_delta)     
         ]
         
-
         if not filtered_data.empty:
             filtered_data = filtered_data.sort_values(by='trade_date')
             filtered_data['trade_date'] = pd.to_datetime(filtered_data['trade_date'])
@@ -295,7 +291,6 @@ class OptionPNLApp(QMainWindow):
             self.canvas.draw()
         else:
             print("No data to display for selected filters.")
-
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
