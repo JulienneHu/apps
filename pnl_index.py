@@ -45,11 +45,11 @@ class OptionPNLApp(QMainWindow):
         control_panel = QFrame(central_widget)
         control_layout = QVBoxLayout(control_panel)
 
-        self.trade_date_input = create_input_field("Trade Date", '2024-05-08', control_layout)
+        self.trade_date_input = create_input_field("Trade Date", '2024-07-02', control_layout)
         self.symbol_input = create_input_field('Symbol', '^SPX', control_layout)
         self.option_chain_input = create_input_field('Option Chain', 'SPX', control_layout, False)
-        self.strike_input = create_input_field("Strike Price", '4500', control_layout)
-        self.expiration_input = create_input_field("Expiration Date", '2024-07-19', control_layout)
+        self.strike_input = create_input_field("Strike Price", '4700', control_layout)
+        self.expiration_input = create_input_field("Expiration Date", '2024-08-16', control_layout)
         self.stock_trade_price_input = create_input_field("Stock Trade Price", '412.00', control_layout)
         self.effective_delta_input = create_input_field("Effective Delta", '0', control_layout)
         
@@ -148,6 +148,7 @@ class OptionPNLApp(QMainWindow):
 
         # Fetch historical data
         option_data = main(symbol, expiration, strike, trade_date)
+        print('option_data:', option_data)
         option_chain = get_option_chain(symbol, expiration, strike)
         self.option_chain_input.input_field.setText(option_chain)
         if option_data is None or option_data.empty:
@@ -224,6 +225,7 @@ class OptionPNLApp(QMainWindow):
                 # Add the new trade to the DataFrame
                 new_df = pd.DataFrame([new_trade])
                 self.trades = pd.concat([self.trades, new_df], ignore_index=True)
+                print('the data frame is:', self.trades)
 
             self.update_plot()
             self.status_label.setText("Trade added successfully!")
@@ -269,7 +271,7 @@ class OptionPNLApp(QMainWindow):
                             f"Stock: ${row['stock_close_price']:.2f}\n" \
                             f"Call: ${row['call_close_price']:.2f}\n" \
                             f"Put: ${row['put_close_price']:.2f}\n" \
-                            f"Daily PNL: ${row['daily_pnl']:.2f}\n" \
+                            f"Current PNL: ${row['daily_pnl']:.2f}\n" \
                             f"Change: {row['change']:.2f}%"
                 hover_texts.append(hover_text)
             filtered_data['hover_text'] = hover_texts

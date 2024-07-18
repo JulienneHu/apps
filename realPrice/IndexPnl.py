@@ -2,8 +2,11 @@ import yfinance as yf
 from realPrice.realStock import get_realtime_stock_price
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
+import numpy as np
+import holidays
+
 
 def get_option_chain(company='SPX', date='2024-05-02', strike=4500):
     ticker = yf.Ticker(company)
@@ -69,7 +72,7 @@ def calls_and_puts(company='SPX', date='2024-05-02', strike=4500):
     options.append(put_symbol) 
     return options 
     
-def main(company='SPX', date='2024-05-02', strike=4500, trade_date='2024-05-16'):
+def main(company='^SPX', date='2024-08-16', strike=4700, trade_date='2024-07-01'):
     # Fetch ticker information
     ticker = yf.Ticker(company)
     option_chain = ticker.option_chain(date)
@@ -116,27 +119,46 @@ def main(company='SPX', date='2024-05-02', strike=4500, trade_date='2024-05-16')
     # Merge the dataframes
     if len(data_frames) == 2:
         df = pd.merge(data_frames[0], data_frames[1], on='date')
+        df['date'] = pd.to_datetime(df['date'])
+        df = df.sort_values(by='date')
+        
+        today = datetime.now().date()-timedelta(days=1)
+        us_holidays = holidays.US(years=[2024])
+        allday = pd.date_range(trade_date, today).strftime('%Y-%m-%d')
+        allday = [day for day in allday if pd.to_datetime(day).weekday() < 5 and day not in us_holidays ]
+
+        # add dates that are not in the df but in the allday list
+        missing_dates = [day for day in allday if day not in df['date'].dt.strftime('%Y-%m-%d').values]
+        missing_df = pd.DataFrame(missing_dates, columns=['date'])
+        missing_df['date'] = pd.to_datetime(missing_df['date'])
+        missing_df['call_close_price'] = np.nan
+        missing_df['put_close_price'] = np.nan
+        df = pd.concat([df, missing_df], ignore_index=True)
+        df = df.sort_values(by='date')
+        
         # Get the stock price data
         start_date = datetime.strptime(trade_date, '%Y-%m-%d')
         end_date = datetime.now()
         stock_prices = get_stock_price('SPY', start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+        stock_prices['date'] = pd.to_datetime(stock_prices['date'])
         df = pd.merge(df, stock_prices, on='date', how='left')
-        
+        df['date'] = df['date'].dt.date
+            
         # add real time stock price, call price as realPrices[0], put price as realPrices[1]
         current_price = get_realtime_stock_price('SPY')[0]
         call_price = realPrices[0]
         put_price = realPrices[1]
         
         df.loc[len(df)] = [datetime.now().date(), call_price, put_price, current_price]
-        
+        df = df.fillna(method='ffill')
+        # round the stock price to two digits
+        df['stock_close_price'] = df['stock_close_price'].round(2)
         print(df)
         return df
     else:
         print("Could not retrieve data for one or more options.")
         return None
     
-
-
-
+main()
 
 

@@ -47,21 +47,21 @@ class OptionPNLApp(QMainWindow):
         control_panel = QFrame(central_widget)
         control_layout = QVBoxLayout(control_panel)
 
-        self.trade_date_input = create_input_field("Trade Date", '2024-05-08', control_layout)
-        self.symbol_input = create_input_field("Symbol", 'MSFT', control_layout)
-        self.strike_input = create_input_field("Strike Price", '415', control_layout)
+        self.trade_date_input = create_input_field("Trade Date", '2024-07-10', control_layout)
+        self.symbol_input = create_input_field("Symbol", 'CRM', control_layout)
+        self.strike_input = create_input_field("Strike Price", '270', control_layout)
         self.expiration_input = create_input_field("Expiration Date", '2024-07-19', control_layout)
-        self.stock_trade_price_input = create_input_field("Stock Trade Price", '412.00', control_layout)
+        self.stock_trade_price_input = create_input_field("Stock Trade Price", '0', control_layout)
         self.effective_delta_input = create_input_field("Effective Delta", '0', control_layout)
         
         self.call_action_type_input = create_combo_box("Call Action Type", ["buy", "sell"], control_layout)
         self.put_action_type_input = create_combo_box("Put Action Type", ["buy", "sell"], control_layout)
         
-        self.num_call_contracts_input = create_input_field("NCall Contracts", '1', control_layout)
-        self.num_put_contracts_input = create_input_field("NPut Contracts", '1', control_layout)
+        self.num_call_contracts_input = create_input_field("NCall Contracts", '3', control_layout)
+        self.num_put_contracts_input = create_input_field("NPut Contracts", '0', control_layout)
         
-        self.put_trade_price_input = create_input_field("Put Trade Price", '12', control_layout)
-        self.call_trade_price_input = create_input_field("Call Trade Price", '11', control_layout)
+        self.call_trade_price_input = create_input_field("Call Trade Price", '2.79', control_layout)
+        self.put_trade_price_input = create_input_field("Put Trade Price", '0.00', control_layout)
         
         # for all input fields, after return pressed, add_trade will be called
         for input_field in [self.trade_date_input.input_field, self.symbol_input.input_field, self.strike_input.input_field, self.expiration_input.input_field,
@@ -265,7 +265,7 @@ class OptionPNLApp(QMainWindow):
                             f"Stock: ${row['stock_close_price']:.2f}\n" \
                             f"Call: ${row['call_close_price']:.2f}\n" \
                             f"Put: ${row['put_close_price']:.2f}\n" \
-                            f"Daily PNL: ${row['daily_pnl']:.2f}\n" \
+                            f"Current PNL: ${row['daily_pnl']:.2f}\n" \
                             f"Change: {row['change']:.2f}%"
                 hover_texts.append(hover_text)
             filtered_data['hover_text'] = hover_texts

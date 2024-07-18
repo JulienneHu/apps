@@ -324,7 +324,7 @@ class OptionPNLApp(QMainWindow):
                             f"Stock: ${row['stock_close_price']:.2f}\n" \
                             f"Call: ${row['call_close_price']:.2f}\n" \
                             f"Put: ${row['put_close_price']:.2f}\n" \
-                            f"Daily PNL: ${row['daily_pnl']:.2f}\n" \
+                            f"Current PNL: ${row['daily_pnl']:.2f}\n" \
                             f"Change: {row['change']:.2f}%"
                 hover_texts.append(hover_text)
             filtered_data['hover_text'] = hover_texts
