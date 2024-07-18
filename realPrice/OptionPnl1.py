@@ -3,9 +3,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 import requests
 import time
-import numpy as np
-import holidays
-
 from realPrice.realStock import get_realtime_stock_price
 from realPrice.realOption import main as get_realtime_option_price
 
@@ -72,31 +69,13 @@ def get_stock_price(symbol, start_date, end_date):
     hist['stock_close_price'] = hist['stock_close_price'].round(2)
     return hist[['date', 'stock_close_price']]
 
-def initialize_df(trade_date):
-    df = pd.DataFrame(columns=['date', 'call_close_price', 'put_close_price', 'stock_close_price'])
-    
-    today = datetime.now().date()
-    df['date'] = pd.date_range(trade_date, today).strftime('%Y-%m-%d')
-    df['date'] = pd.to_datetime(df['date'])
-
-    df['call_close_price'] = np.nan
-    df['put_close_price'] = np.nan
-    df['stock_close_price'] = np.nan
-
- 
-    df = df[df['date'].dt.weekday < 5]
-
-    us_holidays = holidays.US(years=[2024])
-    df = df[~df['date'].isin(us_holidays)]
-    
-    return df
-
-def main(company='ADBE', strike_date='2024-08-16', strike=470, trade_date='2024-06-12'):
+def main(company='AAPL', strike_date='2024-06-21', strike=180, trade_date='2024-05-02'):
     options = calls_or_puts(company, strike_date, strike)
     if options:
         data_frames = []
         for i, option in enumerate(options):
             price_data = get_historical_data(option, trade_date)
+            time.sleep(1)
             if price_data is not None:
                 if i == 0:
                     price_data.rename(columns={'c': 'call_close_price'}, inplace=True)
@@ -107,49 +86,22 @@ def main(company='ADBE', strike_date='2024-08-16', strike=470, trade_date='2024-
                 print(f"Failed to retrieve data for option: {option}")
 
         if len(data_frames) == 2:
-            # merge the dataframes keep all the data
-            df = pd.merge(data_frames[0], data_frames[1], on='date', how='outer')
-            df['date'] = pd.to_datetime(df['date'])
-            # sort data by date
-            df = df.sort_values(by='date')
-       
-            # create a list to have all the dates from trade_date to today excluding weekends and holidays
-            trade_date = '2024-06-12'
-            today = datetime.now().date()-timedelta(days=1)
-            us_holidays = holidays.US(years=[2024])
-            allday = pd.date_range(trade_date, today).strftime('%Y-%m-%d')
-            allday = [day for day in allday if pd.to_datetime(day).weekday() < 5 and day not in us_holidays ]
-
-            # add dates that are not in the df but in the allday list
-            missing_dates = [day for day in allday if day not in df['date'].dt.strftime('%Y-%m-%d').values]
-            missing_df = pd.DataFrame(missing_dates, columns=['date'])
-            missing_df['date'] = pd.to_datetime(missing_df['date'])
-            missing_df['call_close_price'] = np.nan
-            missing_df['put_close_price'] = np.nan
-            df = pd.concat([df, missing_df], ignore_index=True)
-            df = df.sort_values(by='date')
-
+            df = pd.merge(data_frames[0], data_frames[1], on='date')
+            
             # Get the stock price data
             start_date = datetime.strptime(trade_date, '%Y-%m-%d')
             end_date = datetime.now()
             stock_prices = get_stock_price(company, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
-            
-            # Ensure 'date' column in stock_prices is datetime format
-            stock_prices['date'] = pd.to_datetime(stock_prices['date'])
-
             df = pd.merge(df, stock_prices, on='date', how='left')
-            df['date'] = df['date'].dt.date
+            print(df)
             
             # Get today's stock price, call price, and put price
             current_price = get_realtime_stock_price(company)[0]
             current_call_price = get_realtime_option_price(company, strike_date, strike)[0]
             current_put_price = get_realtime_option_price(company, strike_date, strike)[1]
             
-            # Add today's data to the DataFrame if it's not already present else replace it
+            # Add today's data to the DataFrame
             df.loc[len(df)] = [datetime.now().date(), current_call_price, current_put_price, current_price]
-            
-            # for nan values, fill them with the previous day's value
-            df = df.fillna(method='ffill')
             return df
         else:
             print("Could not retrieve data for one or more options.")
@@ -158,6 +110,4 @@ def main(company='ADBE', strike_date='2024-08-16', strike=470, trade_date='2024-
         print("No options found.")
         return None
 
-
-
-
+main()
