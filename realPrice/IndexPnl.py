@@ -139,13 +139,13 @@ def main(company='^SPX', date='2024-08-16', strike=4700, trade_date='2024-07-01'
         # Get the stock price data
         start_date = datetime.strptime(trade_date, '%Y-%m-%d')
         end_date = datetime.now()
-        stock_prices = get_stock_price('SPY', start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+        stock_prices = get_stock_price(company, start_date.strftime('%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
         stock_prices['date'] = pd.to_datetime(stock_prices['date'])
         df = pd.merge(df, stock_prices, on='date', how='left')
         df['date'] = df['date'].dt.date
             
         # add real time stock price, call price as realPrices[0], put price as realPrices[1]
-        current_price = get_realtime_stock_price('SPY')[0]
+        current_price = get_realtime_stock_price(company)[0]
         call_price = realPrices[0]
         put_price = realPrices[1]
         
