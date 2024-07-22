@@ -80,3 +80,34 @@ def main(company='AAPL', date='2024-03-15', strike=100):
             opt = get_realtime_option_price(option)
             res.append(opt[0])
     return res
+
+def getIndexOption(symbol, ticker):
+    info = yf.Ticker(symbol)
+    option_syb = ticker[:next((i for i, char in enumerate(ticker) if char.isdigit()), None)]
+    length = len(option_syb)
+    date = ticker[length:length + 6]
+    option_date = f"20{date[:2]}-{date[2:4]}-{date[4:]}"
+    opt = info.option_chain(option_date)
+    optionType = ticker[length + 6]
+    if optionType.upper() == "C":
+        calls = opt.calls
+        res = calls[calls['contractSymbol'] == ticker]
+    else:
+        puts = opt.puts
+        res = puts[puts['contractSymbol'] == ticker]
+    
+    if res.empty:
+        print(f"No specific option found for {ticker}.")
+        return None
+    today = datetime.today()
+    
+    if today.weekday() > 4 or today in holidays.UnitedStates(years=today.year):
+        market_status = "weekend" if today.weekday() > 4 else "a holiday"
+        last_price = res["lastPrice"].iloc[0] if not res.empty else "N/A"
+        print(f"Today is {market_status}, the market is closed. The last recorded transaction price of {option_name} was {last_price}.")
+    else:
+        last = res['lastPrice'].values[0]
+        bid = res['bid'].values[0]
+        ask = res['ask'].values[0]
+        print(f"Last price: {last}, Ask: {ask}, Bid: {bid}.")
+    return last, bid, ask

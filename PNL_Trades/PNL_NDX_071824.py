@@ -17,7 +17,7 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from datetime import datetime
 
 from realPrice.IndexPnl import main, get_option_chain, calls_and_puts
-from realPrice.realOption import get_realtime_option_price
+from realPrice.realOption import getIndexOption
 
 from tools.stylesheet import stylesheet
 from tools.pnl_creations import pnl_create_input_field as create_input_field, create_combo_box
@@ -164,8 +164,8 @@ class OptionPNLApp(QMainWindow):
             options = calls_and_puts(symbol, expiration, strike)
             
             if options and len(options) == 2:
-                call_close_price, call_ask_price, call_bid_price = get_realtime_option_price(options[0])
-                put_close_price, put_ask_price, put_bid_price = get_realtime_option_price(options[1])
+                call_close_price, call_ask_price, call_bid_price = getIndexOption(symbol, options[0])
+                put_close_price, put_ask_price, put_bid_price = getIndexOption(symbol, options[1])
                 option_data.at[option_data.index[-1], 'call_close_price'] = call_ask_price if call_action_type == "sell" else call_bid_price
                 option_data.at[option_data.index[-1], 'put_close_price'] = put_ask_price if put_action_type == "sell" else put_bid_price
 
