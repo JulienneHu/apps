@@ -1,4 +1,8 @@
 import sys
+import os
+curr = os.getcwd()
+curr = os.path.dirname(curr)
+sys.path.append(curr)
 import pandas as pd
 import yfinance as yf
 import holidays
