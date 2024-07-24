@@ -17,8 +17,9 @@ from realPrice.realOption import getIndexOption
 
 from tools.stylesheet import stylesheet
 from tools.pnl_creations import pnl_create_input_field as create_input_field, create_combo_box
+from tools.pnl_tools import calculate_pnl, market_open
 
-# Dummy DataFrame to hold trade data
+
 trades_df = pd.DataFrame(columns=[
     'trade_date', 'symbol', 'strike', 'expiration', 'stock_trade_price', 'effective_delta',
     'call_trade_price', 'call_action_type', 'num_call_contracts', 'put_trade_price',
@@ -107,26 +108,6 @@ class OptionPNLApp(QMainWindow):
         self.show()
 
 
-    def calculate_pnl(self, call_action, put_action, NC, C_0, C_t, NP, P_0, P_t, effectice_delta, trade_price, current_price):
-        if call_action == "sell" and put_action == "sell":
-            return (NC * (C_0 - C_t) + NP * (P_0 - P_t) + 100 * effectice_delta * (current_price - trade_price)) * 100
-        elif call_action == "sell" and put_action == "buy":
-            return (NC * (C_0 - C_t) + NP * (P_t - P_0) + effectice_delta * (current_price - trade_price)) * 100
-        elif call_action == "buy" and put_action == "sell":
-            return (NC * (C_t - C_0) + NP * (P_0 - P_t) + effectice_delta * (current_price - trade_price)) * 100
-        elif call_action == "buy" and put_action == "buy":
-            return (NC * (C_t - C_0) + NP * (P_t - P_0) + effectice_delta * (current_price - trade_price)) * 100
-        else:
-            return 0  
-
-    def market_open(self):
-        today = datetime.now()  
-        eastern = pytz.timezone('US/Eastern')
-        current_time_et = datetime.now(eastern).time()
-        market_open = datetime.strptime("09:30", "%H:%M").time()
-        market_close = datetime.strptime("16:00", "%H:%M").time()
-        return market_open <= current_time_et <= market_close and today.weekday() < 5 and today not in holidays.US() 
-    
     def add_trade(self):
         # Show the loading spinner
         self.loading_spinner.show()
@@ -156,7 +137,7 @@ class OptionPNLApp(QMainWindow):
             return
 
         # Fetch real-time data if market is open
-        if self.market_open():
+        if market_open():
             options = calls_and_puts(symbol, expiration, strike)
             
             if options and len(options) == 2:
@@ -168,7 +149,7 @@ class OptionPNLApp(QMainWindow):
         # Proceed with updating trades and calculating PNL
         if option_data is not None and not option_data.empty:
             for _, row in option_data.iterrows():
-                daily_pnl = self.calculate_pnl(call_action_type, put_action_type,
+                daily_pnl = calculate_pnl(call_action_type, put_action_type,
                                             num_call_contracts, call_trade_price, row['call_close_price'],
                                             num_put_contracts, put_trade_price, row['put_close_price'],
                                             effective_delta, stock_trade_price, row['stock_close_price'])

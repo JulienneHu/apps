@@ -15,11 +15,9 @@ from datetime import datetime
 
 from tools.stylesheet import stylesheet
 from tools.pnl_creations import pnl_create_input_field as create_input_field, create_combo_box
+from tools.pnl_tools import calculate_pnl, market_open, get_historical_data, get_stock_price, get_ticker, get_pnl, data
 
-api_key = 'C6ig1sXku2yKl_XEIvSvc_OWCwB8ILLn'
-base_url = 'https://api.polygon.io/v2/aggs/ticker/'
 
-# Dummy DataFrame to hold trade data
 trades_df = pd.DataFrame(columns=[
     'trade_date', 'symbol', 'strike', 'expiration', 'stock_trade_price', 'effective_delta',
     'call_trade_price', 'call_action_type', 'num_call_contracts', 'put_trade_price',
@@ -122,11 +120,11 @@ class OptionPNLApp(QMainWindow):
         put_action_type = self.put_action_type_input.combo_box.currentText()
 
         # Get the ticker symbols for the call and put options
-        call_ticker, put_ticker = self.get_ticker(strike, symbol, expiration)
+        call_ticker, put_ticker = get_ticker(strike, symbol, expiration)
         print(f"Call Ticker: {call_ticker}, Put Ticker: {put_ticker}")
 
         # Get PnL data
-        pnl_data = self.get_pnl(call_ticker, put_ticker, trade_date, stock_trade_price, effective_delta, call_action_type, num_call_contracts, call_trade_price, put_action_type, num_put_contracts, put_trade_price)
+        pnl_data = get_pnl(call_ticker, put_ticker, trade_date, stock_trade_price, effective_delta, call_action_type, num_call_contracts, call_trade_price, put_action_type, num_put_contracts, put_trade_price)
 
         if pnl_data is None or pnl_data.empty:
             print("No data found or unable to retrieve data.")
@@ -134,7 +132,7 @@ class OptionPNLApp(QMainWindow):
 
         # Proceed with updating trades and calculating PNL
         for _, row in pnl_data.iterrows():
-            daily_pnl = self.calculate_pnl(call_action_type, put_action_type,
+            daily_pnl = calculate_pnl(call_action_type, put_action_type,
                                         num_call_contracts, call_trade_price, row['call_close_price'],
                                         num_put_contracts, put_trade_price, row['put_close_price'],
                                         effective_delta, stock_trade_price, row['stock'])
@@ -175,11 +173,6 @@ class OptionPNLApp(QMainWindow):
                 (self.trades['put_trade_price'] == new_trade['put_trade_price']) &
                 (self.trades['put_action_type'] == new_trade['put_action_type']) &
                 (self.trades['num_put_contracts'] == new_trade['num_put_contracts']) 
-                # (self.trades['stock_close_price'] == new_trade['stock_close_price']) &
-                # (self.trades['call_close_price'] == new_trade['call_close_price']) &
-                # (self.trades['put_close_price'] == new_trade['put_close_price']) &
-                # (self.trades['daily_pnl'] == new_trade['daily_pnl']) &
-                # (self.trades['change'] == new_trade['change'])
             ]
             
             if not exists.empty:     
@@ -195,97 +188,6 @@ class OptionPNLApp(QMainWindow):
         self.status_label.setText("Trade added successfully!")
         self.loading_spinner.hide()
 
-    def get_historical_data(self, ticker, start_date):
-        end_date = datetime.now()
-        ticker = f'O:{ticker}'
-        if isinstance(start_date, datetime):
-            start_date = start_date.strftime('%Y-%m-%d')
-
-        url = f"{base_url}{ticker}/range/1/day/{start_date}/{end_date.strftime('%Y-%m-%d')}?apiKey={api_key}"
-        response = requests.get(url)
-        
-        if response.status_code == 200:
-            data = response.json()
-            if 'results' in data:
-                df = pd.DataFrame(data['results'])
-                df['t'] = pd.to_datetime(df['t'], unit='ms')
-                df['date'] = df['t'].dt.date
-                print(f"Retrieved historical data for {ticker}: {df.head()}")
-                return df[['date', 'c']], None
-            else:
-                return pd.DataFrame(), "No results found in the data."
-        else:
-            return None, f"Failed to retrieve data: {response.status_code}"
-
-    def get_stock_price(self, symbol, start_date, end_date):
-        stock = yf.Ticker(symbol)
-        hist = stock.history(start=start_date, end=end_date)
-        hist.reset_index(inplace=True)
-        hist['date'] = hist['Date'].dt.date
-        hist.rename(columns={'Close': 'stock_close_price'}, inplace=True)
-        hist['stock'] = hist['stock_close_price'].round(2)
-        print(f"Retrieved stock price data for {symbol}: {hist.head()}")
-        return hist[['date', 'stock']]
-
-    def calculate_pnl(self, call_action, put_action, NC, C_0, C_t, NP, P_0, P_t, effective_delta, trade_price, current_price):
-        if call_action == "sell" and put_action == "sell":
-            return (NC * (C_0 - C_t) + NP * (P_0 - P_t) + effective_delta * (current_price - trade_price)) * 100
-        elif call_action == "sell" and put_action == "buy":
-            return (NC * (C_0 - C_t) + NP * (P_t - P_0) + effective_delta * (current_price - trade_price)) * 100
-        elif call_action == "buy" and put_action == "sell":
-            return (NC * (C_t - C_0) + NP * (P_0 - P_t) + effective_delta * (current_price - trade_price)) * 100
-        elif call_action == "buy" and put_action == "buy":
-            return (NC * (C_t - C_0) + NP * (P_t - P_0) + effective_delta * (current_price - trade_price)) * 100
-        else:
-            return 0
-
-    def get_ticker(self, strike, symbol, maturity):
-        strike = f'{strike:09.3f}'
-        strike = strike.replace('.', '')
-
-        maturity = maturity.replace('-', '')
-        maturity = maturity[2:]
-
-        return f"{symbol}{maturity}C{strike}", f"{symbol}{maturity}P{strike}"
-    
-    def get_pnl(self, call_ticker, put_ticker, trade_date, stock_trade_price, effective_delta, call_action, NC, C_0, put_action, NP, P_0):
-        pnl_data = self.data(call_ticker, put_ticker, trade_date)
-        if pnl_data.empty:
-            print("No data available for the given parameters.")
-            return pd.DataFrame()
-
-        pnl_data['pnl'] = pnl_data.apply(lambda x: self.calculate_pnl(call_action, put_action, NC, C_0, x['call_close_price'], NP, P_0, x['put_close_price'], effective_delta, stock_trade_price, x['stock']), axis=1)
-        return pnl_data
-
-    def data(self, call_ticker, put_ticker, trade_date):
-        call_data, call_error = self.get_historical_data(call_ticker, trade_date)
-        if call_error:
-            print(call_error)
-            return pd.DataFrame()
-
-        put_data, put_error = self.get_historical_data(put_ticker, trade_date)
-        if put_error:
-            print(put_error)
-            return pd.DataFrame()
-        
-        if call_data.empty or put_data.empty:
-            print("Call or put data is empty")  # Debugging statement
-            return pd.DataFrame()
-        
-        call_data.rename(columns={'c': 'call_close_price'}, inplace=True)
-        put_data.rename(columns={'c': 'put_close_price'}, inplace=True)
-        
-        data = pd.merge(call_data, put_data, on='date', how='inner')
-        
-        symbol = call_ticker[:next((i for i, char in enumerate(call_ticker) if char.isdigit()), None)]
-        length = len(symbol)
-        date = call_ticker[length:length + 6]
-        expire_date = f"20{date[:2]}-{date[2:4]}-{date[4:]}"
-        stock_data = self.get_stock_price(symbol, trade_date, expire_date)
-
-        data = pd.merge(data, stock_data, on='date', how='inner')
-        
-        return data
 
     def update_plot(self):
         input_date = self.trade_date_input.input_field.text()
