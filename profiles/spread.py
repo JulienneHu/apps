@@ -1,4 +1,8 @@
 import sys
+import os
+curr = os.getcwd()
+curr = os.path.dirname(curr)
+sys.path.append(curr)
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QSlider, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QLineEdit, QComboBox, QPushButton,
                              QGridLayout, QFrame, QSizePolicy)  # Added QSizePolicy here
