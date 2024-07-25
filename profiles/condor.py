@@ -12,124 +12,9 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
-
-from realPrice.realStock import get_realtime_stock_price
-from realPrice.realOption import main as get_realtime_option_price
-
-class FetchStockThread(QThread):
-    # Define a signal to send the fetched data back to the main thread
-    data_fetched = pyqtSignal(str, str, str)
-
-    def __init__(self, stock_name):
-        super().__init__()
-        self.stock_name = stock_name
-
-    def run(self):
-        try:
-            price, price_change, percentage_change = get_realtime_stock_price(self.stock_name)
-            if price is not None and price_change is not None and percentage_change is not None:
-                self.data_fetched.emit(str(round(price, 2)), str(round(price_change, 2)), str(round(percentage_change, 2)))
-            else:
-                raise ValueError("Missing data")
-        except Exception as e:
-            self.data_fetched.emit('NA', 'NA', 'NA')
-
-class FetchOptionThread(QThread):
-    data_fetched = pyqtSignal(list)
-
-    def __init__(self, company, date, strike):
-        super().__init__()
-        self.company = company
-        self.date = date
-        self.strike = strike
-
-    def run(self):
-        try:
-            prices = get_realtime_option_price(self.company, self.date, self.strike)
-            if not prices or any(p is None for p in prices):
-                raise ValueError("Incomplete data")
-            self.data_fetched.emit([str(price) for price in prices])
-        except Exception as e:
-            self.data_fetched.emit(['NA', 'NA'])  # Assume two prices are expected
-
-
-stylesheet = """
-QWidget {
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 14px;
-    color: #333;
-}
-
-QComboBox {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
-    text-align: center; /* Center text in QComboBox */
-    height: 32px;
-    padding: 24px;
-    font-size: 22px;
-}
-
-QComboBox::drop-down {
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 15px;
-    border-left-width: 1px;
-    border-left-color: darkgray;
-    border-left-style: solid; /* just a single line */
-    border-top-right-radius: 3px; /* same radius as the QComboBox */
-    border-bottom-right-radius: 3px;
-}
-
-QComboBox QAbstractItemView {
-    selection-background-color: #ccc;
-    text-align: center; /* Center text in the dropdown items */
-}
-
-QLineEdit {
-    border: 1px solid #ccc;
-    padding: 5px;
-    border-radius: 4px;
-    background: white;
-    font-size: 14px;
-    text-align: center;
-}
-
-QLabel {
-    font-size: 14px;
-}
-
-QSlider::groove:horizontal {
-    border: 1px solid #999;
-    height: 8px;
-    border-radius: 4px;
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #eee, stop:1 #ddd);
-}
-
-QSlider::handle:horizontal {
-    background: white;
-    border: 1px solid #ccc;
-    width: 18px;
-    margin: -2px 0;
-    border-radius: 3px;
-}
-
-QPushButton {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 5px 10px;
-    background: #eee;
-}
-
-QPushButton:pressed {
-    background: #ddd;
-    font-size: 16px;
-}
-
-QPushButton:hover {
-    border-color: #bbb;
-}
-"""
+from tools.stylesheet import stylesheet
+from tools.profile_creations import create_input_field
+from tools.CondorFetch import FetchStockThread, FetchOptionThread
 
 
 class OptionStrategyVisualizer(QMainWindow):
@@ -163,27 +48,27 @@ class OptionStrategyVisualizer(QMainWindow):
         control_layout.addWidget(self.condor_type_combo)
 
         # Sliders
-        self.delta1 = self.create_input_field('Delta1',  '0') 
+        self.delta1 = create_input_field('Delta1',  '0') 
         control_layout.addWidget(self.delta1)
 
-        self.delta2 = self.create_input_field('Delta2', '0')
+        self.delta2 = create_input_field('Delta2', '0')
         control_layout.addWidget(self.delta2)
 
-        self.delta3 = self.create_input_field('Delta3', '0') 
+        self.delta3 = create_input_field('Delta3', '0') 
         control_layout.addWidget(self.delta3)
 
-        self.delta4 = self.create_input_field('Delta4', '0')
+        self.delta4 = create_input_field('Delta4', '0')
         control_layout.addWidget(self.delta4)
 
         # Input Fields
         # Adjust the layout for the input fields to be in lines
         input_layout_1 = QHBoxLayout()
-        self.symbol_input = self.create_input_field('Symbol', 'AAPL')  # Default symbol
+        self.symbol_input = create_input_field('Symbol', 'AAPL')  # Default symbol
         input_layout_1.addWidget(self.symbol_input)
         control_layout.addLayout(input_layout_1)
         
         input_layout_2 = QHBoxLayout()
-        self.date_input = self.create_input_field('Maturity_Date', '2024-05-17')  # Default date
+        self.date_input = create_input_field('Maturity_Date', '2024-08-16')  # Default date
         input_layout_2.addWidget(self.date_input)
         control_layout.addLayout(input_layout_2)    
            
@@ -193,9 +78,9 @@ class OptionStrategyVisualizer(QMainWindow):
         for i in range(4):  
             input_layout = QHBoxLayout()
 
-            x_input = self.create_input_field(f'X{i+1}', '150')  
-            call_input = self.create_input_field(f'C{i+1}', '9.8', False)  
-            put_input = self.create_input_field(f'P{i+1}', '14.5', False)  
+            x_input = create_input_field(f'X{i+1}', '150')  
+            call_input = create_input_field(f'C{i+1}', '9.8', False)  
+            put_input = create_input_field(f'P{i+1}', '14.5', False)  
 
             input_layout.addWidget(x_input)
             input_layout.addWidget(call_input)
@@ -215,18 +100,18 @@ class OptionStrategyVisualizer(QMainWindow):
         control_layout.addWidget(self.fetch_data_button)
 
         input_layout_7 = QHBoxLayout()
-        self.stock_price_input = self.create_input_field('SPrice', '150', False)
-        self.price_change_input = self.create_input_field('Real', '0', False)
-        self.percent_change_input = self.create_input_field('Pct', '0', False)
+        self.stock_price_input = create_input_field('SPrice', '150', False)
+        self.price_change_input = create_input_field('Real', '0', False)
+        self.percent_change_input = create_input_field('Pct', '0', False)
         input_layout_7.addWidget(self.stock_price_input)
         input_layout_7.addWidget(self.price_change_input)
         input_layout_7.addWidget(self.percent_change_input)
         control_layout.addLayout(input_layout_7)
 
         input_layout_8 = QHBoxLayout()
-        self.stock_range_input = self.create_input_field('SRange', '0.25')
-        self.y_min_input = self.create_input_field('Y_Min', '-1000')
-        self.y_max_input = self.create_input_field('Y_Max', '1000')
+        self.stock_range_input = create_input_field('SRange', '0.25')
+        self.y_min_input = create_input_field('Y_Min', '-1000')
+        self.y_max_input = create_input_field('Y_Max', '1000')
         input_layout_8.addWidget(self.stock_range_input)
         input_layout_8.addWidget(self.y_min_input)
         input_layout_8.addWidget(self.y_max_input)    

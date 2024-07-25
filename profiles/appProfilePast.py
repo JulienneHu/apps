@@ -12,86 +12,8 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-stylesheet = """
-QWidget {
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 14px;
-    color: #333;
-}
-
-QComboBox {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
-    text-align: center; /* Center text in QComboBox */
-    height: 32px;
-    padding: 24px;
-    font-size: 22px;
-}
-
-QComboBox::drop-down {
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 15px;
-    border-left-width: 1px;
-    border-left-color: darkgray;
-    border-left-style: solid; /* just a single line */
-    border-top-right-radius: 3px; /* same radius as the QComboBox */
-    border-bottom-right-radius: 3px;
-}
-
-QComboBox QAbstractItemView {
-    selection-background-color: #ccc;
-    text-align: center; /* Center text in the dropdown items */
-}
-
-QLineEdit {
-    border: 1px solid #ccc;
-    padding: 5px;
-    border-radius: 4px;
-    background: white;
-    font-size: 14px;
-    text-align: center;
-}
-
-QLabel {
-    font-size: 14px;
-}
-
-QSlider::groove:horizontal {
-    border: 1px solid #999;
-    height: 8px;
-    border-radius: 4px;
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #eee, stop:1 #ddd);
-}
-
-QSlider::handle:horizontal {
-    background: white;
-    border: 1px solid #ccc;
-    width: 18px;
-    margin: -2px 0;
-    border-radius: 3px;
-}
-
-QPushButton {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 5px 10px;
-    background: #eee;
-}
-
-QPushButton:pressed {
-    background: #ddd;
-    font-size: 16px;
-}
-
-QPushButton:hover {
-    border-color: #bbb;
-}
-"""
-
+from tools.stylesheet import stylesheet
+from tools.APP_creations import create_slider, create_input_field
 
 class OptionStrategyVisualizer(QMainWindow):
     def __init__(self):
@@ -116,37 +38,37 @@ class OptionStrategyVisualizer(QMainWindow):
         self.trade_type_combo.addItems(['Buy Call-Buy Put', 'Buy Call-Sell Put', 'Sell Call-Buy Put', 'Sell Call-Sell Put'])
         control_layout.addWidget(self.trade_type_combo)
 
-        self.nCall_slider = self.create_slider('NCalls', 0, 5, 1, 1)
+        self.nCall_slider = create_slider('NCalls', 0, 5, 1, 1)
         control_layout.addWidget(self.nCall_slider)
-        self.nPut_slider = self.create_slider('NPuts', 0, 5, 1, 1)
+        self.nPut_slider = create_slider('NPuts', 0, 5, 1, 1)
         control_layout.addWidget(self.nPut_slider)
-        self.deltaCall = self.create_input_field('DeltaCall', '0')
+        self.deltaCall = create_input_field('DeltaCall', '0')
         control_layout.addWidget(self.deltaCall)
-        self.deltaPut = self.create_input_field('DeltaPut', '0')
+        self.deltaPut = create_input_field('DeltaPut', '0')
         control_layout.addWidget(self.deltaPut)
 
         input_layout_1 = QHBoxLayout()
-        self.symbol_input = self.create_input_field('Symbol', 'AAPL')
+        self.symbol_input = create_input_field('Symbol', 'AAPL')
         input_layout_1.addWidget(self.symbol_input)
         input_layout_2 = QHBoxLayout()
-        self.date_input = self.create_input_field('Maturity_Date', '2024-04-19')
+        self.date_input = create_input_field('Maturity_Date', '2024-04-19')
         input_layout_2.addWidget(self.date_input)
         input_layout_3 = QHBoxLayout()
-        self.x_input = self.create_input_field('Strike_Price', '150')
+        self.x_input = create_input_field('Strike_Price', '150')
         input_layout_3.addWidget(self.x_input)
         input_layout_4 = QHBoxLayout()
-        self.call_premium_input = self.create_input_field('C', '9.8')
-        self.put_premium_input = self.create_input_field('P', '14.5')
+        self.call_premium_input = create_input_field('C', '9.8')
+        self.put_premium_input = create_input_field('P', '14.5')
         input_layout_4.addWidget(self.call_premium_input)
         input_layout_4.addWidget(self.put_premium_input)
         input_layout_5 = QHBoxLayout()
-        self.stock_price_input = self.create_input_field('SPrice', '150')
-        self.stock_range_input = self.create_input_field('SRange', '0.25')
+        self.stock_price_input = create_input_field('SPrice', '150')
+        self.stock_range_input = create_input_field('SRange', '0.25')
         input_layout_5.addWidget(self.stock_price_input)
         input_layout_5.addWidget(self.stock_range_input)
         input_layout_6 = QHBoxLayout()
-        self.y_min_input = self.create_input_field('Y_Min', '-1000')
-        self.y_max_input = self.create_input_field('Y_Max', '1000')
+        self.y_min_input = create_input_field('Y_Min', '-1000')
+        self.y_max_input = create_input_field('Y_Max', '1000')
         input_layout_6.addWidget(self.y_min_input)
         input_layout_6.addWidget(self.y_max_input)
 
@@ -186,47 +108,6 @@ class OptionStrategyVisualizer(QMainWindow):
 
         self.show()
         
-    def create_slider(self, label, min_val, max_val, precision, default_val):
-        # Use a QWidget to hold the layout
-        container = QWidget()
-        layout = QHBoxLayout()
-        lbl = QLabel(f'{label}: {default_val}')
-        slider = QSlider(Qt.Horizontal)
-        slider.setMinimum(int(min_val / precision))
-        slider.setMaximum(int(max_val / precision))
-        # Set default value, adjusted by precision
-        slider.setValue(int(default_val / precision))
-        slider.valueChanged.connect(lambda value: lbl.setText(f'{label}: {value * precision}'))
-        slider.valueChanged.connect(self.update_plot)  # Connect the slider to the update_plot method
-        layout.addWidget(lbl)
-        layout.addWidget(slider)
-        container.setLayout(layout)
-        container.slider = slider  # Store the slider in the container for access
-        return container
-
-
-    def create_input_field(self, label, default_value):
-        container = QWidget()
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)  # Keep margins minimal
-        layout.setSpacing(10)
-        
-        lbl = QLabel(label)
-        lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)  # Adjust this line
-        
-        input_field = QLineEdit(default_value)
-        input_field.setAlignment(Qt.AlignCenter)
-        input_field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Ensure input field can expand
-        
-        input_field.returnPressed.connect(self.update_plot)
-        
-        layout.addWidget(lbl)
-        layout.addWidget(input_field)
-        container.setLayout(layout)
-        container.input_field = input_field
-        return container
-
-
 
     def update_plot(self):
         # Retrieve values from UI components

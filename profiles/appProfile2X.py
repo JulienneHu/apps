@@ -13,132 +13,9 @@ from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 
-from realPrice.realStock import get_realtime_stock_price
-from realPrice.realOptionProfile import main as get_realtime_option_price
-
-class FetchStockThread(QThread):
-    # Define a signal to send the fetched data back to the main thread
-    data_fetched = pyqtSignal(object, object, object)
-
-    def __init__(self, stock_name):
-        super().__init__()
-        self.stock_name = stock_name
-
-    def run(self):
-        try:
-            price, price_change, percentage_change = get_realtime_stock_price(self.stock_name)
-            # Ensure the values are not None and are numeric, else set them to 'NA'
-            price = round(price, 2) if price is not None else 'NA'
-            price_change = round(price_change, 2) if price_change is not None else 'NA'
-            percentage_change = round(percentage_change, 2) if percentage_change is not None else 'NA'
-        except Exception as e:
-            price, price_change, percentage_change = 'NA', 'NA', 'NA'
-        finally:
-            self.data_fetched.emit(price, price_change, percentage_change)
-
-
-class FetchOptionThread(QThread):
-    data_fetched = pyqtSignal(list, list, list)
-    
-    def __init__(self, company, date, strike):
-        super().__init__()
-        self.company = company
-        self.date = date
-        self.strike = strike
-
-    def run(self):
-        try:
-            prices, open_interests, volumes = get_realtime_option_price(self.company, self.date, self.strike)
-            prices = [str(p) if p is not None else 'NA' for p in prices]
-            open_interests = [str(oi) if oi is not None else 'NA' for oi in open_interests]
-            volumes = [str(v) if v is not None else 'NA' for v in volumes]
-        except Exception as e:
-            prices = ['NA', 'NA']  # Adjust depending on the expected number of elements
-            open_interests = ['NA', 'NA']
-            volumes = ['NA', 'NA']
-        finally:
-            self.data_fetched.emit(prices, open_interests, volumes)
-
-
-
-
-stylesheet = """
-QWidget {
-    font-family: Verdana, Arial, Helvetica, sans-serif;
-    font-size: 14px;
-    color: #333;
-}
-
-QComboBox {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background: white;
-    text-align: center; /* Center text in QComboBox */
-    height: 32px;
-    padding: 24px;
-    font-size: 22px;
-}
-
-QComboBox::drop-down {
-    subcontrol-origin: padding;
-    subcontrol-position: top right;
-    width: 15px;
-    border-left-width: 1px;
-    border-left-color: darkgray;
-    border-left-style: solid; /* just a single line */
-    border-top-right-radius: 3px; /* same radius as the QComboBox */
-    border-bottom-right-radius: 3px;
-}
-
-QComboBox QAbstractItemView {
-    selection-background-color: #ccc;
-    text-align: center; /* Center text in the dropdown items */
-}
-
-QLineEdit {
-    border: 1px solid #ccc;
-    padding: 5px;
-    border-radius: 4px;
-    background: white;
-    font-size: 14px;
-    text-align: center;
-}
-
-QLabel {
-    font-size: 14px;
-}
-
-QSlider::groove:horizontal {
-    border: 1px solid #999;
-    height: 8px;
-    border-radius: 4px;
-    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #eee, stop:1 #ddd);
-}
-
-QSlider::handle:horizontal {
-    background: white;
-    border: 1px solid #ccc;
-    width: 18px;
-    margin: -2px 0;
-    border-radius: 3px;
-}
-
-QPushButton {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 5px 10px;
-    background: #eee;
-}
-
-QPushButton:pressed {
-    background: #ddd;
-    font-size: 16px;
-}
-
-QPushButton:hover {
-    border-color: #bbb;
-}
-"""
+from tools.stylesheet import stylesheet
+from tools.AP2Fetch import FetchStockThread, FetchOptionThread
+from tools.profile_creations import create_input_field, create_slider
 
 
 class OptionStrategyVisualizer(QMainWindow):
@@ -175,51 +52,51 @@ class OptionStrategyVisualizer(QMainWindow):
         control_layout.addWidget(self.trade_type_combo)
 
         # Sliders
-        self.nCall_slider = self.create_slider('N1Calls', 0, 5, 1, 1) 
+        self.nCall_slider = create_slider('N1Calls', 0, 5, 1, 1) 
         control_layout.addWidget(self.nCall_slider)
 
-        self.nPut_slider = self.create_slider('N1Puts', 0, 5, 1, 1)
+        self.nPut_slider = create_slider('N1Puts', 0, 5, 1, 1)
         control_layout.addWidget(self.nPut_slider)
 
-        self.deltaCall = self.create_input_field('Delta1Call','0') 
+        self.deltaCall = create_input_field('Delta1Call','0') 
         control_layout.addWidget(self.deltaCall)
 
-        self.deltaPut = self.create_input_field('Delta1Put', '0')
+        self.deltaPut = create_input_field('Delta1Put', '0')
         control_layout.addWidget(self.deltaPut)
 
         # Input Fields 
         input_layout_1 = QHBoxLayout()
-        self.x_input = self.create_input_field('Strike_Price', '150')
+        self.x_input = create_input_field('Strike_Price', '150')
         self.x_inputs.append(self.x_input)
         input_layout_1.addWidget(self.x_input)
            
         input_layout_2 = QHBoxLayout()
-        self.call_premium_input = self.create_input_field('C1', '9.8', False)
+        self.call_premium_input = create_input_field('C1', '9.8', False)
         self.call_premium_inputs.append(self.call_premium_input)
         input_layout_2.addWidget(self.call_premium_input)
         
         input_layout_3 = QHBoxLayout()
-        self.call_open_interest_input = self.create_input_field('C1_OI', '0', False)
+        self.call_open_interest_input = create_input_field('C1_OI', '0', False)
         self.call_open_interest_inputs.append(self.call_open_interest_input)
         input_layout_3.addWidget(self.call_open_interest_input)
         
         input_layout_4 = QHBoxLayout()
-        self.call_volume_input = self.create_input_field('C1_Vol', '0', False)
+        self.call_volume_input = create_input_field('C1_Vol', '0', False)
         self.call_volume_inputs.append(self.call_volume_input)
         input_layout_4.addWidget(self.call_volume_input)
         
         input_layout_5 = QHBoxLayout()
-        self.put_premium_input = self.create_input_field('P1', '14.5', False)  
+        self.put_premium_input = create_input_field('P1', '14.5', False)  
         self.put_premium_inputs.append(self.put_premium_input)   
         input_layout_5.addWidget(self.put_premium_input)
         
         input_layout_6 = QHBoxLayout()
-        self.put_open_interest_input = self.create_input_field('P1_OI', '0', False)
+        self.put_open_interest_input = create_input_field('P1_OI', '0', False)
         self.put_open_interest_inputs.append(self.put_open_interest_input)
         input_layout_6.addWidget(self.put_open_interest_input)
         
         input_layout_7 = QHBoxLayout()
-        self.put_volume_input = self.create_input_field('P1_Vol', '0', False) 
+        self.put_volume_input = create_input_field('P1_Vol', '0', False) 
         self.put_volume_inputs.append(self.put_volume_input)
         input_layout_7.addWidget(self.put_volume_input)
         
@@ -245,51 +122,51 @@ class OptionStrategyVisualizer(QMainWindow):
 
         # Right Sliders
         # Sliders
-        self.n2Call_slider = self.create_slider('N2Calls', 0, 5, 1, 1) 
+        self.n2Call_slider = create_slider('N2Calls', 0, 5, 1, 1) 
         right_control_layout.addWidget(self.n2Call_slider)
 
-        self.n2Put_slider = self.create_slider('N2Puts', 0, 5, 1, 1)
+        self.n2Put_slider = create_slider('N2Puts', 0, 5, 1, 1)
         right_control_layout.addWidget(self.n2Put_slider)
 
-        self.delta2Call = self.create_input_field('Delta2Call', '0') 
+        self.delta2Call = create_input_field('Delta2Call', '0') 
         right_control_layout.addWidget(self.delta2Call)
 
-        self.delta2Put = self.create_input_field('Delta2Put', '0')
+        self.delta2Put = create_input_field('Delta2Put', '0')
         right_control_layout.addWidget(self.delta2Put)
 
         # Right Input Fields
         right_input_layout_0 = QHBoxLayout()
-        self.x2_input = self.create_input_field('Strike_Price2', '150')
+        self.x2_input = create_input_field('Strike_Price2', '180')
         self.x_inputs.append(self.x2_input)
         right_input_layout_0.addWidget(self.x2_input)
         
         right_input_layout_1 = QHBoxLayout()
-        self.call_premium2_input = self.create_input_field('C2', '9.8', False)   
+        self.call_premium2_input = create_input_field('C2', '9.8', False)   
         self.call_premium_inputs.append(self.call_premium2_input)
         right_input_layout_1.addWidget(self.call_premium2_input)
         
         right_input_layout_2 = QHBoxLayout()
-        self.call_open_interest2_input = self.create_input_field('C2_OI', '0', False)
+        self.call_open_interest2_input = create_input_field('C2_OI', '0', False)
         self.call_open_interest_inputs.append(self.call_open_interest2_input)
         right_input_layout_2.addWidget(self.call_open_interest2_input)
         
         right_input_layout_3 = QHBoxLayout()
-        self.call_volume2_input = self.create_input_field('C2_Vol', '0', False)
+        self.call_volume2_input = create_input_field('C2_Vol', '0', False)
         self.call_volume_inputs.append(self.call_volume2_input)
         right_input_layout_3.addWidget(self.call_volume2_input)
         
         right_input_layout_4 = QHBoxLayout()
-        self.put_premium2_input = self.create_input_field('P2', '14.5', False)
+        self.put_premium2_input = create_input_field('P2', '14.5', False)
         self.put_premium_inputs.append(self.put_premium2_input)    
         right_input_layout_4.addWidget(self.put_premium2_input)
         
         right_input_layout_5 = QHBoxLayout()
-        self.put_open_interest2_input = self.create_input_field('P2_OI', '0', False)
+        self.put_open_interest2_input = create_input_field('P2_OI', '0', False)
         self.put_open_interest_inputs.append(self.put_open_interest2_input)
         right_input_layout_5.addWidget(self.put_open_interest2_input)
         
         right_input_layout_6 = QHBoxLayout()
-        self.put_volume2_input = self.create_input_field('P2_Vol', '0', False) 
+        self.put_volume2_input = create_input_field('P2_Vol', '0', False) 
         self.put_volume_inputs.append(self.put_volume2_input)
         right_input_layout_6.addWidget(self.put_volume2_input)
         
@@ -304,9 +181,9 @@ class OptionStrategyVisualizer(QMainWindow):
 
         # Common controls across left and right panels
         fetch_layout = QHBoxLayout()
-        self.symbol_input = self.create_input_field('Symbol', 'AAPL')
+        self.symbol_input = create_input_field('Symbol', 'AAPL')
         fetch_layout.addWidget(self.symbol_input)
-        self.date_input = self.create_input_field('Maturity_Date', '2024-05-17')
+        self.date_input = create_input_field('Maturity_Date', '2024-08-16')
         fetch_layout.addWidget(self.date_input)
         self.fetch_data_button = QPushButton('Fetch Data / Refresh', control_panel)
         self.fetch_data_button.clicked.connect(self.fetch_data)
@@ -315,9 +192,9 @@ class OptionStrategyVisualizer(QMainWindow):
         grid_layout.addLayout(fetch_layout, 1, 0, 1, 2)  # Spans two columns
 
         stock_info_layout = QHBoxLayout()
-        self.stock_price_input = self.create_input_field('SPrice', '150', False)
-        self.price_change_input = self.create_input_field('Real', '0', False)
-        self.percent_change_input = self.create_input_field('Pct', '0', False)
+        self.stock_price_input = create_input_field('SPrice', '180', False)
+        self.price_change_input = create_input_field('Real', '0', False)
+        self.percent_change_input = create_input_field('Pct', '0', False)
         stock_info_layout.addWidget(self.stock_price_input)
         stock_info_layout.addWidget(self.price_change_input)
         stock_info_layout.addWidget(self.percent_change_input)
@@ -325,9 +202,9 @@ class OptionStrategyVisualizer(QMainWindow):
         
         # plot size
         plot_size_layout = QHBoxLayout()
-        self.y_min_input = self.create_input_field('Y_Min', '-5000')
-        self.y_max_input = self.create_input_field('Y_Max', '5000')
-        self.stock_range_input = self.create_input_field('SRange', '0.2')
+        self.y_min_input = create_input_field('Y_Min', '-5000')
+        self.y_max_input = create_input_field('Y_Max', '5000')
+        self.stock_range_input = create_input_field('SRange', '0.2')
         plot_size_layout.addWidget(self.y_min_input)
         plot_size_layout.addWidget(self.y_max_input)
         plot_size_layout.addWidget(self.stock_range_input)
@@ -382,49 +259,6 @@ class OptionStrategyVisualizer(QMainWindow):
         self.show()
 
 
-    def create_slider(self, label, min_val, max_val, precision, default_val):
-        # Use a QWidget to hold the layout
-        container = QWidget()
-        layout = QHBoxLayout()
-        lbl = QLabel(f'{label}: {default_val}')
-        slider = QSlider(Qt.Horizontal)
-        slider.setMinimum(int(min_val / precision))
-        slider.setMaximum(int(max_val / precision))
-        # Set default value, adjusted by precision
-        slider.setValue(int(default_val / precision))
-        slider.valueChanged.connect(lambda value: lbl.setText(f'{label}: {value * precision}'))
-        slider.valueChanged.connect(self.update_plot)  # Connect the slider to the update_plot method
-        layout.addWidget(lbl)
-        layout.addWidget(slider)
-        container.setLayout(layout)
-        container.slider = slider  # Store the slider in the container for access
-        return container
-
-
-    def create_input_field(self, label, default_value, editable=True):
-        container = QWidget()
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)  # Keep margins minimal
-        layout.setSpacing(10)
-        
-        lbl = QLabel(label)
-        lbl.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)  # Adjust this line
-        
-        input_field = QLineEdit(default_value)
-        input_field.setAlignment(Qt.AlignCenter)
-        input_field.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # Ensure input field can expand
-        input_field.setReadOnly(not editable) 
-         
-        input_field.returnPressed.connect(self.update_plot)
-        
-        layout.addWidget(lbl)
-        layout.addWidget(input_field)
-        container.setLayout(layout)
-        container.input_field = input_field
-        return container
-
-
-
     def update_plot(self):
         
         if 'NA'in [self.stock_price_input.input_field.text(), self.call_premium_input.input_field.text(), self.put_premium_input.input_field.text(), self.call_premium2_input.input_field.text(), self.put_premium2_input.input_field.text()]:
@@ -459,7 +293,7 @@ class OptionStrategyVisualizer(QMainWindow):
         except ValueError:
             self.figure.clear()
             ax = self.figure.add_subplot(111)
-            ax.text(0.5, 0.5, 'Options does not exist. Please input valid parameters', fontsize=16, fontweight='bold', ha='center', va='center')
+            ax.text(0.5, 0.5, 'Value Error. Please input valid parameters', fontsize=16, fontweight='bold', ha='center', va='center')
             self.canvas.draw()
             return
 
